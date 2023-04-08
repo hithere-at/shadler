@@ -108,7 +108,7 @@ Returns JSON object containing URL's for streaming and the stream source name. H
 
 ```json
 {
-	data: {
+	"data": {
 		"episode": {
 			"episodeString": "SELECTED_EP",
 			"uploadDate": {
