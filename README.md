@@ -14,6 +14,6 @@ For the time being, The only supported platform is Termux. Support for other pla
 
 ## To-do list
 - [x] Core functionality (e.g streaming and downloding)
-- [ ] AllAnime API documentation
+- [x] AllAnime API documentation 
 - [ ] Support for other platforms
 - [ ] Support for using arguments using `argparser` library

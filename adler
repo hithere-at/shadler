@@ -106,7 +106,7 @@ if src_link.startswith("/apivtwo"):
 	src_link = src_link.replace("clock", "clock.json")
 	resp = json.loads(urlopen("https://mblog.allanimenews.com" + src_link).read().decode())
 
-	if src_name == "Ac": # Crunchyroll
+	if src_name == "Ac":
 		# Get subbed video (format: multitrack_adaptive_hls_v2)
 		video_link = resp["links"]["portData"]["streams"][11]["url"]
 
