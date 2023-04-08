@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+
+apt install python
+chmod +x adler
+cp adler $PREFIX/adler
