@@ -5,7 +5,7 @@ A Python script to stream and download anime from AllAnime
 Run the install script.
 ```sh
 git clone https://github.com/hithere-at/adler.git
-cd git 
+cd adler
 chmod +x install && ./install
 ```
 
