@@ -1,10 +1,12 @@
 #!/usr/bin/env python
-from urllib.request import urlopen
+from urllib.request import urlopen, Request
 from urllib.parse import quote as urlquote
+from platform import python_version
+from re import findall
 from os import system
-import json
+from json import loads as json_loads
 
-# Input Sanitizer 1: Check if input value is valid and not out of range
+# Input Sanitizer: Check if input value is valid and not out of range
 
 def int_prompt(content, err_msgs, range_num=[]):
 
@@ -27,6 +29,16 @@ def int_prompt(content, err_msgs, range_num=[]):
 
 	return augh
 
+def find_source(src_name, srcs):
+
+	for x in srcs:
+
+		if x[1] == src_name:
+			link = x[0]
+			break
+
+	return [link, src_name]
+
 # URL constants and SHA256 hashes for fetching query results and stream links
 QUERY_HASH = "b645a686b1988327795e1203867ed24f27c6338b41e5e3412fc1478a8ab6774e"
 STREAM_HASH = "0ac09728ee9d556967c1a60bbcf55a9f58b4112006d09a258356aeafe1c33889"
@@ -47,7 +59,7 @@ url_extensions = URL_EXTENSIONS.replace("<HASH>", QUERY_HASH)
 fetch_url = "https://api.allanime.to/allanimeapi?variables=" + url_variables + "&extensions=" + url_extensions
 
 # Fetch query reuslts and the anime info
-resp = json.loads(urlopen(fetch_url).read().decode())
+resp = json_loads(urlopen(fetch_url).read().decode())
 shows = resp["data"]["shows"]["edges"]
 
 # List of AllAnime anime id's, name, and current subbed episode (used to fetch stream links and display anime's name to user)
@@ -72,21 +84,13 @@ url_extensions = URL_EXTENSIONS.replace("<HASH>", STREAM_HASH)
 
 fetch_url = "https://api.allanime.to/allanimeapi?variables=" + url_variables + "&extensions=" + url_extensions
 
-print("", end="\n")
-
 # Fetch and sort stream links
-resp = json.loads(urlopen(fetch_url).read().decode())
+resp = json_loads(urlopen(fetch_url).read().decode())
 stream_links = resp["data"]["episode"]["sourceUrls"]
 stream_links = sorted(stream_links, key=lambda x: x['priority'], reverse=True)
 
 # List of stream sources with their URL, name, and download link (if any)
-name_and_links = [[z["sourceUrl"], z["sourceName"], z.get("downloads")] for z in stream_links]
-
-for x, y in enumerate(name_and_links, 1):
-	print(f"\033[1;36m[{x}]\033[0m \033[1;34m{y[1]}\033[0m")
-
-# Ask user for selected source and action
-source = int_prompt(f"\033[1;35mSelect source [1-{len(name_and_links)}]:\033[0m ", ["\033[1;31mError: Invalid input\033[0m\n", "\033[1;31mError: Source out of range\033[0m\n"], range_num=[1, len(name_and_links)])
+name_and_links = [[z["sourceUrl"], z["sourceName"]] for z in stream_links]
 
 print("\n\033[1;36m[1] \033[1;34mStream\033[0m\n\033[1;36m[2] \033[1;34mDownload\033[0m")
 
@@ -98,56 +102,65 @@ if action == 1:
 elif action == 2:
 	actiion = "download"
 
-src_name = name_and_links[source][1]
-src_link = name_and_links[source][0]
+quality_table = {1: "1080", 2: "720", 3: "480", 4: "360"}
+
+print("", end="\n")
+
+for x in quality_table:
+	print(f"\033[1;36m[{x}]\033[0m \033[1;34m{quality_table[x]}\033[0m")
+
+quality = int_prompt("\033[1;35mSelect quality:\033[0m ", ["\033[1;31mError: Invalid input\033[0m\n", "\033[1;31mError: Quality out of range\033[0m\n"], range_num=[1, 4])
+quality = quality_table[quality]
+
+if quality == "1080":
+	src_link, src_name = find_source("Yt-HD", name_and_links)
+
+elif quality == "720" or quality == "360":
+	src_link, src_name = find_source("Luf-mp4", name_and_links)
+
+elif quality == "480":
+	src_link, src_name = find_source("Yt-SD", name_and_links)
 
 # Some source require fetching another sources and stream links and this code below handles it.
 if src_link.startswith("/apivtwo"):
 	src_link = src_link.replace("clock", "clock.json")
-	resp = json.loads(urlopen("https://mblog.allanimenews.com" + src_link).read().decode())
+	req_obj = Request("https://mblog.allanimenews.com" + src_link, headers={"user-agent": f"Python/{python_version()}", "authority": "mblog.allanimenews.com"})
+	resp = json_loads(urlopen(req_obj).read().decode())
 
-	if src_name == "Ac":
-		# Get subbed video (format: multitrack_adaptive_hls_v2)
-		video_link = resp["links"]["portData"]["streams"][11]["url"]
+	video_links = [x for x in resp["links"] if not x["link"].endswith("m3u8")]
 
-	else:
-		video_links = []
+	if video_links == []:
+		print("\033[1;31mUnsupported link format. Please use another source\033[0m")
+		exit()
 
-		for x in resp["links"]:
+	if len(video_links) == 1:
+		is_hls = True
+		src_link = video_links[0]["link"]
 
-			# Skip HLS links because there is no built-in HLS handler at the moment
-			if x["link"].endswith("m3u8"):
-				continue
+		req_obj = Request(src_link, headers={"user-agent": f"Python/{python_version()}"})
+		resp = urlopen(req_obj).read().decode()
+		resp = resp.split('\n')
 
-			else:
-				video_links.append(x)
-
-		if video_link == []:
-			print("\033[1;31mUnsupported link format. Please use another source\033[0m")
-			exit()
-
-		if len(video_link) == 1:
-			src_link = video_links[0]["link"]
+		if quality == "360":
+			src_link = resp[2]
 
 		else:
-			print("", end="\n")
-
-			for x, y in enumerate(video_links, 1):
-				print(f"\033[1;36m[{x}] \033[1;34m{y}\033[0m")
-
-			another_src = int_prompt("\033[1;35mSelect source:\033[0m ", ["\033[1;31mError: Invalid input\033[0m\n", "\033[1;31mError: Source out of range\033[0m\n"], range_num=[1, len(video_links)])
-
-			src_link = video_links[another_src-1]["link"]
+			src_link = resp[6]
 
 if action == "stream":
 	system(f"nohup am start --user 0 -a android.intent.action.VIEW -d '{src_link}' -n is.xyz.mpv/.MPVActivity > /dev/null 2>&1 &")
 	print("\n\033[1;32mYou should see the MPV window shortly\033[0m")
 
 else:
-	download_url = name_and_links[source][2]
 
-	if download_url is None:
-		system(f"aria2c -s 7 -x 7 '{src_link}'")
+	if is_hls is True:
+		req_obj = Request(src_link, headers={"user-agent": f"Python/{python_version()}"})
+		resp = urlopen(req_obj).read().decode()
+
+		with open("dl.m3u8", "w") as file:
+			file.write(resp)
+
+		system(f"ffmpeg -loglevel error -stats -protocol_whitelist file,http,https,tcp,tls,crypto -i dl.m3u8 -c copy '{anime_info[0]} Episode {episode}.mp4'")
 
 	else:
-		system(f"aria2c -s 7 -x 7 '{download_url['downloadUrl']}'")
+		system(f"aria2c -s 7 -x 7 -o '{anime_info[0]} Episode {episode}.np4' '{src_link}'")

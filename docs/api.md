@@ -29,8 +29,8 @@ This is where you put your URL encoded JSON to fetch data like search results an
 This is where you put your APQ query string to specify what type of operation to do.
 
   * APQ format
-    `{"persistedQuery":{"version":1,"sha256Hash":"HASH"}}`
-    Replace HASH with the hash you want to use and URL encode it
+    * `{"persistedQuery":{"version":1,"sha256Hash":"HASH"}}`
+    Replace `HASH` with the hash you want to use and URL encode it
 
 Put it all together, for example:
 `https://api.allanime.to/allanimeapi?variables={%22search%22:{%22query%22:%22link%20click%22,%22allowAdult%22:false,%22allowUnknown%22:false},%22limit%22:26,%22page%22:1,%22translationType%22:%22sub%22,%22countryOrigin%22:%22ALL%22}&extensions={%22persistedQuery%22:{%22version%22:1,%22sha256Hash%22:%22b645a686b1988327795e1203867ed24f27c6338b41e5e3412fc1478a8ab6774e%22}}`
@@ -69,22 +69,22 @@ Returns JSON object containing full anime metadata (e.g ID, available episodes, 
 
 ```json
 {
-	"data": {
-		"shows": {
-			"pageinfo": {
-				"total": N
-			},
-			"edges": [
-				{
-					"_id": "ID",
-					"name": "ROMAJI_NAME"
-					"ensglishName": "EN_NAME"
-					...
-				},
-				...
-			]
-		}
-	}
+  "data": {
+    "shows": {
+      "pageinfo": {
+        "total": N
+      },
+      "edges": [
+         {
+           "_id": "ID",
+           "name": "ROMAJI_NAME"
+           "englishName": "EN_NAME"
+           ...
+         },
+        ...
+      ]
+    }
+  }
 }
 ```
 
@@ -108,23 +108,23 @@ Returns JSON object containing URL's for streaming and the stream source name. H
 
 ```json
 {
-	"data": {
-		"episode": {
-			"episodeString": "SELECTED_EP",
-			"uploadDate": {
-				...
-			},
-			"sourceUrls": [
-				{
-					"sourceUrl": "STREAM_URL"
-					"priority": FLOAT
-					"sourceName": "SOURCE_NAME"
-					...
-				},
-				...
-			]
-		}
-	}
+  "data": {
+    "episode": {
+      "episodeString": "SELECTED_EP",
+      "uploadDate": {
+          ...
+      },
+      "sourceUrls": [
+        {
+          "sourceUrl": "STREAM_URL"
+          "priority": FLOAT_VALUE
+          "sourceName": "SOURCE_NAME"
+          ...
+        },
+        ...
+      ]
+    }
+  }
 }
 ```
 
