@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
 
-apt install -y python ffmpeg
+apt install -y ffmpeg
 chmod +x adler
 cp adler $PREFIX/adler

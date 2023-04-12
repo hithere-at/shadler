@@ -1,5 +1,8 @@
-# adler
-A Python script to stream and download anime from AllAnime
+# shadler
+A shell script to stream and download anime from AllAnime
+
+## About this branch
+Basically does the same thing but without Python. This shell script has better performance compared to the Python verison, but its kinda buggy at the moment. It has rewritten parser (using RegEx instead of accessing JSON). This script is also POSIX compatible. 
 
 ## Installation
 Run the install script.
