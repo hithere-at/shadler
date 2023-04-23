@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
 
 apt install -y ffmpeg
-chmod +x adler
-cp adler $PREFIX/adler
+chmod +x shadler
+cp shadler $PREFIX/shadler
