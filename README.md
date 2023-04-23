@@ -7,8 +7,8 @@ Basically does the same thing but without Python. This shell script has better p
 ## Installation
 Run the install script.
 ```sh
-git clone https://github.com/hithere-at/adler.git
-cd adler
+git clone https://github.com/hithere-at/shadler.git
+cd shadler
 chmod +x install && ./install
 ```
 
