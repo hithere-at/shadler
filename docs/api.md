@@ -1,5 +1,5 @@
 # AllAnime GraphQL API Documentation
-This doc is only for the `/anime` section. `/manga` will not be discussed.
+This documentation discuss about how the API works for `anime` and `music` part of the AllAnime API. `manga` part soon.
 
 ## API endpoint
 AllAnime API only have a single endpoint, which is `/allanimeapi` with base url of `https://api.allanime.to`. This will be used to fetch stuff from the website.
@@ -41,7 +41,7 @@ Put it all together, for example:
 Create a JSON object with the key listed below
 
 * `search`
-  `search` contain JSON object with the key listed below.
+  contain JSON object with the key listed below.
 
   | Key | Type | Description |
   | ----- | ---- | -----------
@@ -138,7 +138,7 @@ Return JSON object containing URL's for streaming and the stream source name. He
 Create JSON object with the keys listed below
 
 * `search`
-  `search` contain a JSON object with the key listed below
+  contain a JSON object with the key listed below
 
    * `query`
      * Data type: `string`
