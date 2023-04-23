@@ -2,8 +2,7 @@
 A shell script to stream and download anime from AllAnime
 
 ## Usage
-`$ shadler anime` to watch anime
-`$ shadler music` to listen to anime songs
+`$ shadler anime` to watch anime. `$ shadler music` to listen to anime songs
 
 ## Dependencies
 * curl
