@@ -35,11 +35,13 @@ This is where you put your APQ query string to specify what type of operation to
 Put it all together, for example:
 `https://api.allanime.to/allanimeapi?variables={%22search%22:{%22query%22:%22link%20click%22,%22allowAdult%22:false,%22allowUnknown%22:false},%22limit%22:26,%22page%22:1,%22translationType%22:%22sub%22,%22countryOrigin%22:%22ALL%22}&extensions={%22persistedQuery%22:{%22version%22:1,%22sha256Hash%22:%22b645a686b1988327795e1203867ed24f27c6338b41e5e3412fc1478a8ab6774e%22}}`
 
+## Anime
+
 ### Fetch search results
-Create a JSON object with the keys listed below
+Create a JSON object with the key listed below
 
 * `search`
-  `search` contain JSON object with the keys listed below.
+  `search` contain JSON object with the key listed below.
 
   | Key | Type | Description |
   | ----- | ---- | -----------
@@ -65,7 +67,7 @@ Create a JSON object with the keys listed below
   * Values: `ALL` (could be more than this but idk what is the values)
   * Description: Display search results from the specified country.
 
-Returns JSON object containing full anime metadata (e.g ID, available episodes, duration, the time the anime aired). Here is the data structure:
+Return JSON object containing full anime metadata (e.g ID, available episodes, duration, the time the anime aired). Here is the data structure:
 
 ```json
 {
@@ -89,7 +91,7 @@ Returns JSON object containing full anime metadata (e.g ID, available episodes, 
 ```
 
 ### Fetch stream sources
-Create a JSON object with the keys listed below
+Create a JSON object with the key listed below
 
 * `showId`
   * Data type: `string`
@@ -104,7 +106,7 @@ Create a JSON object with the keys listed below
   * Data type: `string`
   * Description: Specify which episode to get the stream source.
 
-Returns JSON object containing URL's for streaming and the stream source name. Here is the data structure:
+Return JSON object containing URL's for streaming and the stream source name. Here is the data structure:
 
 ```json
 {
@@ -129,3 +131,61 @@ Returns JSON object containing URL's for streaming and the stream source name. H
 ```
 
 **NOTE: The higher the priority value are, the higher the chance of the link still working**
+
+## Music
+
+### Fetch anime musics title, artist, audio link, etc.
+Create JSON object with the keys listed below
+
+* `search`
+  `search` contain a JSON object with the key listed below
+
+   * `query`
+     * Data type: `string`
+     * Description: Music name to search
+
+* `limit`
+  * Data type: `int`
+  * Description: The limit of displayed search result.
+
+* `page`
+  * Data type: `int`
+  * Description: Display the results only on the spcified page.
+
+Return JSON object containing informations anime-related musics. Here is the data structure:
+
+```json
+{
+  "data": {
+    "musics": {
+      "edges": [
+        {
+          "_id": "MUSIC_ID",
+          "slug": "URL_ENCODED_MUSIC_NAME",
+          "artist": {
+            "name": {
+              "full": "ARTIST_NAME"
+            }
+          },
+          "musicTitle": {
+            "full": "MUSIC_NAME"
+          },
+          "musicUrls": [
+            "url": "MUSIC_URL"
+            ...
+          ],
+          "show": {
+            "name": "ANIME_NAME",
+            "_id": "ANIME_ID",
+            "thumbnail": "ANIME_COVER_LINK"
+          },
+          "cover": "MUSIC_COVER_LINK"
+          "type": "ANIME_EP_OR_ED"
+          ...
+        },
+        ...
+      ]
+    }
+  }
+}
+```

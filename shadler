@@ -4,6 +4,11 @@
 # Luf-Mp4 "sourceUrl" will allways end with "&referer="
 # Yt-SD will allways be above Yt-HD
 
+# Global variables documentation:
+# $query_url : A variable containing URL for getting API query results
+
+# Please make all variables inside a function local
+
 RESET="\033[0m"
 MAGENTA="\033[1;35m"
 CYAN="\033[1;36m"
@@ -11,11 +16,15 @@ GREEN="\033[1;32m"
 RED="\033[1;31m"
 BLUE="\033[1;34m"
 
-QUERY_HASH="b645a686b1988327795e1203867ed24f27c6338b41e5e3412fc1478a8ab6774e"
-STREAM_HASH="0ac09728ee9d556967c1a60bbcf55a9f58b4112006d09a258356aeafe1c33889"
+ANIME_QUERY_VARS='\{%22search%22:\{%22query%22:%22#QUERY#%22,%22allowAdult%22:false,%22allowUnknown%22:false\},%22limit%22:26,%22page%22:1,%22translationType%22:%22sub%22,%22countryOrigin%22:%22ALL%22\}'
+ANIME_STREAM_VARS='\{%22showId%22:%22#ANIME_ID#%22,%22translationType%22:%22sub%22,%22episodeString%22:%22#EPISODE#%22\}'
+ANIME_QUERY_HASH="b645a686b1988327795e1203867ed24f27c6338b41e5e3412fc1478a8ab6774e"
+ANIME_STREAM_HASH="0ac09728ee9d556967c1a60bbcf55a9f58b4112006d09a258356aeafe1c33889"
 
-QUERY_VARS='\{%22search%22:\{%22query%22:%22#QUERY#%22,%22allowAdult%22:false,%22allowUnknown%22:false\},%22limit%22:26,%22page%22:1,%22translationType%22:%22sub%22,%22countryOrigin%22:%22ALL%22\}'
-STREAM_VARS='\{%22showId%22:%22#ANIME_ID#%22,%22translationType%22:%22sub%22,%22episodeString%22:%22#EPISODE#%22\}'
+MUSIC_QUERY_VARS='\{%22search%22:\{%22query%22:%22#QUERY#%22\},%22limit%22:10,%22page%22:1\}'
+MUSIC_QUERY_HASH="1c2cf5d3eab363ad9976cc448db54df789f10cfa092ddd58fbb08d521036138a"
+#MUSIC_QUERY_HASH="1c2cf5d3eab363ad9976cc448db54df789f10cfa092ddd58fbb08d521036138a"
+
 API_EXT='\{%22persistedQuery%22:\{%22version%22:1,%22sha256Hash%22:%22#HASH#%22\}\}'
 
 # args: $1 = prompt
@@ -51,122 +60,211 @@ int_sanitize() {
 	return $augh
 }
 
+# args $1 = search query
+# args $2 = query type (e.g. anime or manga or music)
 get_query_url() {
 	local query_obj ext_obj
-	query_obj=$(printf '%s' "$QUERY_VARS" | sed -e "s/#QUERY#/$1/")
-	ext_obj=$(printf '%s' "$API_EXT" | sed -e "s/#HASH#/$QUERY_HASH/")
+
+	if [ "$2" = "anime" ]; then
+		query_obj=$(printf '%s' "$ANIME_QUERY_VARS" | sed -e "s/#QUERY#/$1/")
+		ext_obj=$(printf '%s' "$API_EXT" | sed -e "s/#HASH#/$ANIME_QUERY_HASH/")
+
+	elif [ "$2" = "music" ]; then
+		query_obj=$(printf '%s' "$MUSIC_QUERY_VARS" | sed -e "s/#QUERY#/$1/")
+		ext_obj=$(printf '%s' "$API_EXT" | sed -e "s/#HASH#/$MUSIC_QUERY_HASH/")
+
+	fi
+
 	printf 'https://api.allanime.to/allanimeapi?variables=%s&extensions=%s' "$query_obj" "$ext_obj"
 
 }
 
+# args: $1 = anime id
 get_streams_url() {
 	local stream_obj ext_obj
-	stream_obj=$(printf '%s' "$STREAM_VARS" | sed -e "s/#ANIME_ID#/$1/" -e "s/#EPISODE#/$2/")
-	ext_obj=$(printf '%s' "$API_EXT" | sed -e "s/#HASH#/$STREAM_HASH/")
+	stream_obj=$(printf '%s' "$ANIME_STREAM_VARS" | sed -e "s/#ANIME_ID#/$1/" -e "s/#EPISODE#/$2/")
+	ext_obj=$(printf '%s' "$API_EXT" | sed -e "s/#HASH#/$ANIME_STREAM_HASH/")
 	printf 'https://api.allanime.to/allanimeapi?variables=%s&extensions=%s' "$stream_obj" "$ext_obj"
 
 }
 
-counter=0
+base_prompt() {
+	local query
+	printf "${MAGENTA}Query:${RESET} "
+	read -r keywords
+	query=$(printf "$keywords" | sed 's/ /%20/g')
 
-printf "${MAGENTA}Anime name:${RESET} "
-read -r keywords
-query=$(printf "$keywords" | sed 's/ /%20/g')
+	query_url=$(get_query_url "$query" "$1")
+}
 
-query_url=$(get_query_url "$query")
-api_resp=$(curl -s "$query_url")
+anime_handler() {
+	local api_resp counter name_list anime_id_list anime_ep_list name_list_len chosen_one show_id available_ep episode stream_url quality action is_hls hls_sources video_link hls_link hls_playlist anime_name
 
-if [ $? -eq 56 ]; then
-	printf "${RED}Cant connect to server. Please check your internet connection${RESET}\n"
-	exit 56
+	counter=0
+	api_resp=$(curl -s "$query_url")
 
-fi
+	name_list=$(printf "$api_resp" | grep -o 'name":"[^"]\+' | sed 's/name":"//g')
+	anime_id_list=$(printf "$api_resp" | grep -o '_id":"[^"]\+' | sed 's/_id":"//g')
+	anime_ep_list=$(printf "$api_resp" | grep -o 'availableEpisodes":{"sub":[0-9]\+' | sed 's/availableEpisodes":{"sub"://g')
 
-name_list=$(printf "$api_resp" | grep -o 'name":"[^"]\+' | sed 's/name":"//g')
-anime_id_list=$(printf "$api_resp" | grep -o '_id":"[^"]\+' | sed 's/_id":"//g')
-anime_ep_list=$(printf "$api_resp" | grep -o 'availableEpisodes":{"sub":[0-9]\+' | sed 's/availableEpisodes":{"sub"://g')
+	name_list_len=$(printf "$name_list\n" | wc -l)
 
-name_list_len=$(printf "$name_list\n" | wc -l)
+	printf "\n"
 
-printf "\n"
+	printf "$name_list\n" | while read line; do
+		counter=$((counter + 1))
+		printf "${CYAN}[$counter] ${BLUE}$line${RESET}\n"
+	done
 
-printf "$name_list\n" | while read line; do
-	counter=$((counter + 1))
-	printf "${CYAN}[$counter] ${BLUE}$line${RESET}\n"
-done
+	int_sanitize 'Select anime: ' 'Error: Anime out of range' 1 $name_list_len
+	chosen_one=$?
+	show_id=$(printf "$anime_id_list\n" | sed "${chosen_one}q;d")
+	available_ep=$(printf "$anime_ep_list\n" | sed "${chosen_one}q;d")
 
+	int_sanitize "Select episode [1-${available_ep}]: " 'Error: Episode out of range' 1 $available_ep
+	episode=$?
 
-int_sanitize 'Select anime: ' 'Error: Anime out of range' 1 $name_list_len
-chosen_one=$?
-show_id=$(printf "$anime_id_list\n" | sed "${chosen_one}q;d")
-available_ep=$(printf "$anime_ep_list\n" | sed "${chosen_one}q;d")
+	stream_url=$(get_streams_url "$show_id" "$episode")
+	api_resp=$(curl -s "$stream_url")
 
-int_sanitize "Select episode [1-${available_ep}]: " 'Error: Episode out of range' 1 $available_ep
-episode=$?
+	printf "\n${CYAN}[1] ${BLUE}360${RESET}\n"
+	printf "${CYAN}[2] ${BLUE}480${RESET}\n"
+	printf "${CYAN}[3] ${BLUE}720${RESET}\n"
+	printf "${CYAN}[4] ${BLUE}1080${RESET}\n"
 
-stream_url=$(get_streams_url "$show_id" "$episode")
-api_resp=$(curl -s "$stream_url")
+	int_sanitize 'Select quality: ' 'Error: Quality out of range' 1 4
+	quality=$?
 
-printf "\n${CYAN}[1] ${BLUE}1080${RESET}\n"
-printf "${CYAN}[2] ${BLUE}720${RESET}\n"
-printf "${CYAN}[3] ${BLUE}480${RESET}\n"
-printf "${CYAN}[4] ${BLUE}360${RESET}\n"
+	printf "\n${CYAN}[1] ${BLUE}Stream${RESET}\n"
+	printf "${CYAN}[2] ${BLUE}Download${RESET}\n"
 
-int_sanitize 'Select quality: ' 'Error: Quality out of range' 1 4
-quality=$?
+	int_sanitize 'Select action: ' 'Error: Action out of range' 1 2
+	action=$?
 
-if [ $quality -eq 1 ]; then
-	video_link=$(printf "$api_resp" | grep -o 'https://work[^"]\+' | sed '2q;d' )
+	# Use the echo command to avoid printf invalid directive
+	# Always use HLS for streaming to avoid out-of-buffer error
+	if [ $action -eq 1 ]; then
+		hls_sources=$(echo "$api_resp" | grep -o 'apivtwo/[^"]\+referer=')
+		is_hls=1
 
-elif [ $quality -eq 3 ]; then
-	video_link=$(printf "$api_resp" | grep -o 'https://work[^"]\+' | sed '1q;d' )
+	elif [ $action -eq 2 ]; then
 
-else
-	hls_sources=$(printf "$api_resp" | grep -o 'apivtwo/[^"]\+referer=')
+		# Use Yt-SD video link for 480p download
+		if [ $quality -eq 2 ]; then
+			video_link=$(echo "$api_resp" | grep -o 'https://work[^"]\+' | sed '1q;d' )
+			is_hls=0
 
-fi
+		# Use Yt-HD video link for 1080p download
+		elif [ $quality -eq 4 ]; then
+			video_link=$(echo "$api_resp" | grep -o 'https://work[^"]\+' | sed '2q;d' )
+			is_hls=0
 
-is_hls=0
+		# Use HLS 360p or 720p video link to download
+		else
+			hls_sources=$(echo "$api_resp" | grep -o 'apivtwo/[^"]\+referer=')
+			is_hls=1
 
-printf "\n${CYAN}[1] ${BLUE}Stream${RESET}\n"
-printf "${CYAN}[2] ${BLUE}Download${RESET}\n"
-
-int_sanitize 'Select action: ' 'Error: Action out of range' 1 2
-action=$?
-
-if [ -n "$hls_sources" ]; then
-	hls_sources=$(printf "$hls_sources" | sed "s/clock/clock.json/")
-	api_resp=$(curl -s "https://mblog.allanimenews.com/${hls_sources}")
-
-	hls_link=$(printf "$api_resp" | grep -o 'https://work[^"]\+' | head -n 1)
-	hls_playlist=$(curl -s "$hls_link")
-
-	if [ $quality -eq 2 ]; then
-		video_link=$(printf "$hls_playlist" | sed '7q;d')
-
-	elif [ $quality -eq 4 ]; then
-		video_link=$(printf "$hls_playlist" | sed '3q;d')
+		fi
 
 	fi
-
-	is_hls=1
-
-fi
-
-if [ $action -eq 1 ]; then
-	nohup am start --user 0 -a android.intent.action.VIEW -d "$video_link" -n is.xyz.mpv/.MPVActivity > /dev/null 2>&1 &
-	printf "\n${GREEN}You should see the MPV window shortly${RESET}\n"
-
-else
 
 	if [ $is_hls -eq 1 ]; then
-		curl -s -o dl.m3u8 "$video_link"
-		anime_name=$(printf "$name_list\n" | sed '${chosen_one}q;d')
-		ffmpeg -loglevel error -stats -i dl.m3u8 -c copy "$anime_name Episode $episode"
+		hls_sources=$(printf "$hls_sources" | sed "s/clock/clock.json/")
+		api_resp=$(curl -s "https://mblog.allanimenews.com/${hls_sources}")
 
-	else
-		curl -o "$anime_name Episode $episode" "$video_link"
+		hls_link=$(printf "$api_resp" | grep -o 'https://work[^"]\+' | head -n 1)
+		hls_playlist=$(curl -s "$hls_link")
+
+		idx=$((1 + (2 * $quality)))
+		video_link=$(printf "$hls_playlist" | sed "${idx}q;d")
 
 	fi
+
+	if [ $action -eq 1 ]; then
+		nohup am start --user 0 -a android.intent.action.VIEW -d "$video_link" -n is.xyz.mpv/.MPVActivity > /dev/null 2>&1 &
+		printf "\n${GREEN}You should see the MPV window shortly${RESET}\n"
+
+	else
+		anime_name=$(printf "$name_list\n" | sed "${chosen_one}q;d")
+
+		if [ $is_hls -eq 1 ]; then
+			curl -s -o dl.m3u8 "$video_link"
+			ffmpeg -loglevel error -stats -i dl.m3u8 -c copy "$anime_name Episode $episode"
+
+		else
+			curl -o "$anime_name Episode $episode" "$video_link"
+
+		fi
+
+	fi
+
+}
+
+music_handler() {
+	local api_resp song_url song_artist song_name songs_len counter idx cur_song_name cur_song_artist song_list song_link selected action selected_song_name
+
+	counter=0
+	song_list=""
+	api_resp=$(curl -s "$query_url")
+
+	printf '\n'
+
+	song_url=$(printf "$api_resp" | grep -o 'url":"[^"]\+' | sed 's/url":"//g')
+	song_artist=$(printf "$api_resp" | grep -o 'artist":\(null\|{"name":{"full":"[^"]\+\)' | sed -e 's/artist"://g' -e 's/{"name":{"full":"//g')
+	song_name=$(printf "$api_resp" | grep -o 'musicTitle":{"full":"[^"]\+' | sed 's/musicTitle":{"full":"//g')
+
+	songs_len=$(printf "$song_url\n" | wc -l)
+
+	while ! [ $counter -eq $songs_len ]; do
+		idx=$((counter + 1))
+		cur_song_name=$(printf "$song_name\n" | sed "${idx}q;d")
+		cur_song_artist=$(printf "$song_artist\n" | sed "${idx}q;d")
+
+		song_list="${song_list}${CYAN}[${idx}]${RESET} ${BLUE}$cur_song_name - $cur_song_artist${RESET}\n"
+
+		counter=$((counter + 1))
+
+	done
+
+	printf "$song_list"
+
+	int_sanitize 'Select song: ' 'Error: Song out of range' 1 $songs_len
+	selected=$?
+
+	song_link=$(printf "$song_url\n" | sed "${selected}q;d")
+	song_link="https://aln.youtube-anime.com/${song_link}"
+
+	printf '\n'
+
+	printf "${CYAN}[1]${RESET} ${BLUE}Stream${RESET}\n"
+	printf "${CYAN}[2]${RESET} ${BLUE}Download${RESET}\n"
+
+	int_sanitize 'Select action: ' 'Error: Action out of range' 1 2
+	action=$?
+
+	if [ $action -eq 1 ]; then
+		nohup am start --user 0 -a android.intent.action.VIEW -d "$song_link" -n is.xyz.mpv/.MPVActivity > /dev/null 2>&1 &
+		printf "\n${GREEN}You should see the MPV window shortly${RESET}\n"
+
+	elif [ $action -eq 2 ]; then
+		selected_song_name=$(printf "$song_name" | sed "${selected}q;d")
+		curl -o "${selected_song_name}.mp3" "$song_link"
+
+	fi
+
+}
+
+# MAIN
+
+if [ "$1" = "anime" ]; then
+	base_prompt 'anime'
+	anime_handler
+
+elif [ "$1" = "music" ]; then
+	base_prompt 'music'
+	music_handler
+
+else
+	printf "${RED}Error: Unknown subcommand. Available subcommand is 'anime' and 'music'${RESET}\n"
 
 fi
