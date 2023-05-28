@@ -9,18 +9,40 @@ A shell script to stream and download anime from AllAnime
 * sed
 * grep
 * mpv for video player
-* ffmpeg for m3u8 downloader
+* ffmpeg for m3u8 playlist downloader
 
 ## Installation
-Run the install script.
+
+### Termux
+Using termux require you to have `mpv-android` installed on your phone. You can find it [here](https://github.com/mpv-android/mpv-android/releases)
+
 ```sh
-git clone https://github.com/hithere-at/shadler.git
-cd shadler
-chmod +x install && ./install
+curl -o shadler 'https://raw.githubusercontent.com/hithere-at/shadler/master/shadler'
+apt install -y ffmpeg
+mv shadler $PREFIX/bin
+```
+
+### GNU/Linux
+
+##### Ubuntu
+```sh
+curl -o shadler 'https://raw.githubusercontent.com/hithere-at/shadler/master/shadler'
+sudo apt install -y ffmpeg mpv
+sudo mv shadler /usr/local/bin
+```
+
+##### Arch linux
+```sh
+curl -o shadler 'https://raw.githubusercontent.com/hithere-at/shadler/master/shadler'
+sudo pacman -S ffmpeg mpv
+sudo mv shadler /usr/local/bin
 ```
 
 ## Supported platform
-For the time being, The only supported platform is Termux. Support for other platforms will be added until there is someone making a PR for it or until i get a PC. You still can use the the `shadler` script though.
+- GNU/Linux
+- Termux
+
+Support for Windows is not likely to come as i dont have access to Windows PC.
 
 ## To-do list
 - [x] Core functionality (e.g streaming and downloding)

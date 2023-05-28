@@ -18,12 +18,13 @@ BLUE="\033[1;34m"
 
 ANIME_QUERY_VARS='\{%22search%22:\{%22query%22:%22#QUERY#%22,%22allowAdult%22:false,%22allowUnknown%22:false\},%22limit%22:26,%22page%22:1,%22translationType%22:%22sub%22,%22countryOrigin%22:%22ALL%22\}'
 ANIME_STREAM_VARS='\{%22showId%22:%22#ANIME_ID#%22,%22translationType%22:%22sub%22,%22episodeString%22:%22#EPISODE#%22\}'
-ANIME_QUERY_HASH="b645a686b1988327795e1203867ed24f27c6338b41e5e3412fc1478a8ab6774e"
-ANIME_STREAM_HASH="0ac09728ee9d556967c1a60bbcf55a9f58b4112006d09a258356aeafe1c33889"
+ANIME_QUERY_HASH="06327bc10dd682e1ee7e07b6db9c16e9ad2fd56c1b769e47513128cd5c9fc77a"
+ANIME_STREAM_HASH="5f1a64b73793cc2234a389cf3a8f93ad82de7043017dd551f38f65b89daa65e0"
 
 MUSIC_QUERY_VARS='\{%22search%22:\{%22query%22:%22#QUERY#%22\},%22limit%22:10,%22page%22:1\}'
 MUSIC_QUERY_HASH="1c2cf5d3eab363ad9976cc448db54df789f10cfa092ddd58fbb08d521036138a"
-#MUSIC_QUERY_HASH="1c2cf5d3eab363ad9976cc448db54df789f10cfa092ddd58fbb08d521036138a"
+
+PLATFORM="$(uname -o)"
 
 API_EXT='\{%22persistedQuery%22:\{%22version%22:1,%22sha256Hash%22:%22#HASH#%22\}\}'
 
@@ -101,7 +102,7 @@ anime_handler() {
 	local api_resp counter name_list anime_id_list anime_ep_list name_list_len chosen_one show_id available_ep episode stream_url quality action is_hls hls_sources video_link hls_link hls_playlist anime_name
 
 	counter=0
-	api_resp=$(curl -s "$query_url")
+	api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" "$query_url")
 
 	name_list=$(printf "$api_resp" | grep -o 'name":"[^"]\+' | sed 's/name":"//g')
 	anime_id_list=$(printf "$api_resp" | grep -o '_id":"[^"]\+' | sed 's/_id":"//g')
@@ -125,7 +126,7 @@ anime_handler() {
 	episode=$?
 
 	stream_url=$(get_streams_url "$show_id" "$episode")
-	api_resp=$(curl -s "$stream_url")
+	api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" "$stream_url")
 
 	printf "\n${CYAN}[1] ${BLUE}360${RESET}\n"
 	printf "${CYAN}[2] ${BLUE}480${RESET}\n"
@@ -181,7 +182,16 @@ anime_handler() {
 	fi
 
 	if [ $action -eq 1 ]; then
-		nohup am start --user 0 -a android.intent.action.VIEW -d "$video_link" -n is.xyz.mpv/.MPVActivity > /dev/null 2>&1 &
+		
+		if [ "$PLATFORM" = "Android" ]; then
+			nohup am start --user 0 -a android.intent.action.VIEW -d "$video_link" -n is.xyz.mpv/.MPVActivity > /dev/null 2>&1 &
+
+		elif [ "$PLATFORM" = "GNU/Linux" ]; then
+			anime_name=$(printf "$name_list\n" | sed "${chosen_one}q;d")
+			nohup mpv --force-media-title="$anime_name Episode $episode" "$video_link" > /dev/null 2>&1 &
+
+		fi
+
 		printf "\n${GREEN}You should see the MPV window shortly${RESET}\n"
 
 	else
