@@ -2,7 +2,7 @@
 A shell script to stream and download anime from AllAnime
 
 ## Usage
-`$ shadler anime` to watch anime. `$ shadler music` to listen to anime songs
+`$ shadler anime` to watch anime, `$ shadler music` to listen to anime songs, and `$ shadler manga` to read manga.
 
 ## Dependencies
 * curl
@@ -42,10 +42,10 @@ sudo mv shadler /usr/local/bin
 - GNU/Linux
 - Termux
 
-Support for Windows is not likely to come as i dont have access to Windows PC.
+Currently, there is no Windows support. It is possible to use PowerShell on Linux and do the development there but that is another mess i dont want to deal, dash (sh) is already a painful experience.
 
 ## To-do list
 - [x] Core functionality (e.g streaming and downloding)
-- [x] AllAnime API documentation 
-- [ ] Support for other platforms
+- [ ] AllAnime API documentation `TODO`
+- [x] Support for other platforms
 - [ ] Support for using arguments using `getopt`
