@@ -5,13 +5,15 @@
 # Yt-SD will allways be above Yt-HD
 
 # Global variables documentation:
-# $query_url : A variable containing URL for getting API query results
+# $query_url: A variable containing URL for getting API query results
+# $ret_val: A variable containing the return value of a function
 
 # Please make all variables inside a function local
 
 RESET="\033[0m"
 MAGENTA="\033[1;35m"
 CYAN="\033[1;36m"
+YELLOW="\033[1;33m"
 GREEN="\033[1;32m"
 RED="\033[1;31m"
 BLUE="\033[1;34m"
@@ -24,33 +26,56 @@ ANIME_STREAM_HASH="5f1a64b73793cc2234a389cf3a8f93ad82de7043017dd551f38f65b89daa6
 MUSIC_QUERY_VARS='\{%22search%22:\{%22query%22:%22#QUERY#%22\},%22limit%22:10,%22page%22:1\}'
 MUSIC_QUERY_HASH="1c2cf5d3eab363ad9976cc448db54df789f10cfa092ddd58fbb08d521036138a"
 
-PLATFORM="$(uname -o)"
+MANGA_QUERY_VARS='\{%22search%22:\{%22query%22:%22#QUERY#%22,%22isManga%22:true\},%22limit%22:26,%22page%22:1,%22translationType%22:%22sub%22,%22countryOrigin%22:%22ALL%22\}'
+MANGA_QUERY_HASH="a27e57ef5de5bae714db701fb7b5cf57e13d57938fc6256f7d5c70a975d11f3d"
+MANGA_DETAIL_VARS='\{%22_id%22:%22#MANGA_ID#%22\}'
+MANGA_DETAIL_HASH='a42e1106694628f5e4eaecd8d7ce0c73895a22a3c905c29836e2c220cf26e55f'
+MANGA_READ_VARS='\{%22mangaId%22:%22#MANGA_ID#%22,%22translationType%22:%22sub%22,%22chapterString%22:%22#CHAPTER#%22,%22limit%22:10,%22offset%22:0\}'
+MANGA_READ_HASH="295146730c381d163441c23d0761e1eae8d0333db5c30688739b1ef1f399925c"
 
 API_EXT='\{%22persistedQuery%22:\{%22version%22:1,%22sha256Hash%22:%22#HASH#%22\}\}'
+
+PLATFORM="$(uname -o)"
+DATA_DIR="$HOME/.local/share/shadler"
 
 # args: $1 = prompt
 #       $2 = Out of range error message
 #       $3 = lowerbound range
 #       $4 = upperbound range
 int_sanitize() {
-	local augh
+	local augh slop
 
 	while true; do
 		printf "${MAGENTA}$1${RESET}"
-		read augh
+		read augh slop
 
-		if [ -z "$augh" ]; then
+		if [ -z "$augh" ] && [ -z "$slop" ]; then
 			printf "${RED}Error: Input cannot be empty${RESET}\n\n" >&2
-
-		elif ! [ $augh -eq $augh 2> /dev/null ]; then
-			printf "${RED}Error: Invalid number${RESET}\n\n" >&2
 			continue
 
-		fi
+		elif ! [ -z $slop ]; then
 
-		if [ $3 -gt $augh ] || [ $augh -gt $4 ]; then
-			printf "${RED}$2${RESET}\n\n" >&2
-			continue
+			if ! [ $augh -eq $augh 2> /dev/null ] || ! [ $slop -eq $slop 2> /dev/null ]; then
+				printf "${RED}Error: Invalid number${RESET}\n\n" >&2
+				continue
+
+			elif [ $augh -gt $slop ] || [ $slop -lt $augh ] || [ $augh -lt $3 ] || [ $slop -gt $4 ]; then
+				printf "${RED}$2${RESET}\n\n" >&2
+				continue
+
+			fi
+
+		elif [ -z "$slop" ]; then
+
+			if ! [ $augh -eq $augh 2> /dev/null ]; then
+				printf "${RED}Error: Invalid number${RESET}\n\n" >&2
+				continue
+
+			elif [ $3 -gt $augh ] || [ $augh -gt $4 ]; then
+				printf "${RED}$2${RESET}\n\n" >&2
+				continue
+
+			fi
 
 		fi
 
@@ -58,11 +83,12 @@ int_sanitize() {
 
 	done
 
-	return $augh
+	ret_val="START:$augh STOP:$slop"
+
 }
 
 # args $1 = search query
-# args $2 = query type (e.g. anime or manga or music)
+#      $2 = query type (e.g. anime or manga or music)
 get_query_url() {
 	local query_obj ext_obj
 
@@ -74,21 +100,47 @@ get_query_url() {
 		query_obj=$(printf '%s' "$MUSIC_QUERY_VARS" | sed -e "s/#QUERY#/$1/")
 		ext_obj=$(printf '%s' "$API_EXT" | sed -e "s/#HASH#/$MUSIC_QUERY_HASH/")
 
+	elif [ "$2" = "manga" ]; then
+		query_obj=$(printf '%s' "$MANGA_QUERY_VARS" | sed -e "s/#QUERY#/$1/")
+		ext_obj=$(printf '%s' "$API_EXT" | sed -e "s/#HASH#/$MANGA_QUERY_HASH/")
+
 	fi
 
 	printf 'https://api.allanime.to/allanimeapi?variables=%s&extensions=%s' "$query_obj" "$ext_obj"
 
 }
 
-# args: $1 = anime id
+# args: $1 = manga ID
+manga_get_detail_url() {
+	local detail_obj ext_obj
+
+	detail_obj=$(printf '%s' "$MANGA_DETAIL_VARS" | sed -e "s/#MANGA_ID#/$1/")
+	ext_obj=$(printf '%s' "$API_EXT" | sed -e "s/#HASH#/$MANGA_DETAIL_HASH/")
+	printf 'https://api.allanime.to/allanimeapi?variables=%s&extensions=%s' "$detail_obj" "$ext_obj"
+
+}
+
+# args: $1 = Type
+#       $2 = AllAnime id
+#       $3 = Chapter or episode
 get_streams_url() {
 	local stream_obj ext_obj
-	stream_obj=$(printf '%s' "$ANIME_STREAM_VARS" | sed -e "s/#ANIME_ID#/$1/" -e "s/#EPISODE#/$2/")
-	ext_obj=$(printf '%s' "$API_EXT" | sed -e "s/#HASH#/$ANIME_STREAM_HASH/")
+
+	if [ "$1" = "anime" ]; then
+		stream_obj=$(printf '%s' "$ANIME_STREAM_VARS" | sed -e "s/#ANIME_ID#/$2/" -e "s/#EPISODE#/$3/")
+		ext_obj=$(printf '%s' "$API_EXT" | sed -e "s/#HASH#/$ANIME_STREAM_HASH/")
+
+	elif [ "$1" = "manga" ]; then
+		stream_obj=$(printf '%s' "$MANGA_READ_VARS" | sed -e "s/#MANGA_ID#/$2/" -e "s/#CHAPTER#/$3/")
+		ext_obj=$(printf '%s' "$API_EXT" | sed -e "s/#HASH#/$MANGA_READ_HASH/")
+
+	fi
+
 	printf 'https://api.allanime.to/allanimeapi?variables=%s&extensions=%s' "$stream_obj" "$ext_obj"
 
 }
 
+# args: $1 = Type
 base_prompt() {
 	local query
 	printf "${MAGENTA}Query:${RESET} "
@@ -99,9 +151,11 @@ base_prompt() {
 }
 
 anime_handler() {
-	local api_resp counter name_list anime_id_list anime_ep_list name_list_len chosen_one show_id available_ep episode stream_url quality action is_hls hls_sources video_link hls_link hls_playlist anime_name
+	local counter video_links api_resp name_list anime_id_list anime_ep_list name_list_len chosen_one show_id available_ep anime_name start_ep ep_idx stop_ep quality action stream_url is_hls hls_source video_url anime_dl_dir
 
 	counter=0
+	video_links=""
+
 	api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" "$query_url")
 
 	name_list=$(printf "$api_resp" | grep -o 'name":"[^"]\+' | sed 's/name":"//g')
@@ -114,97 +168,120 @@ anime_handler() {
 
 	printf "$name_list\n" | while read line; do
 		counter=$((counter + 1))
-		printf "${CYAN}[$counter] ${BLUE}$line${RESET}\n"
+		printf "${MAGENTA}[$counter] ${BLUE}$line${RESET}\n"
 	done
 
+	counter=0
+
 	int_sanitize 'Select anime: ' 'Error: Anime out of range' 1 $name_list_len
-	chosen_one=$?
+	chosen_one=$(printf "$ret_val" | grep -o "START:[0-9]\+" | sed "s/START://")
+
 	show_id=$(printf "$anime_id_list\n" | sed "${chosen_one}q;d")
 	available_ep=$(printf "$anime_ep_list\n" | sed "${chosen_one}q;d")
+	anime_name=$(printf "$name_list\n" | sed "${chosen_one}q;d")
 
 	int_sanitize "Select episode [1-${available_ep}]: " 'Error: Episode out of range' 1 $available_ep
-	episode=$?
+	start_ep=$(printf "$ret_val" | grep -o "START:[0-9]\+" | sed "s/START://")
+	ep_idx=$start_ep
+	stop_ep=$(printf "$ret_val" | grep -o "STOP:[0-9]\+" | sed "s/STOP://")
+	[ -z $stop_ep ] && stop_ep=$start_ep
 
-	stream_url=$(get_streams_url "$show_id" "$episode")
-	api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" "$stream_url")
+	printf "\n${MAGENTA}[1] ${BLUE}Low${RESET}\n"
+	printf "${MAGENTA}[2] ${BLUE}High${RESET}\n"
 
-	printf "\n${CYAN}[1] ${BLUE}360${RESET}\n"
-	printf "${CYAN}[2] ${BLUE}480${RESET}\n"
-	printf "${CYAN}[3] ${BLUE}720${RESET}\n"
-	printf "${CYAN}[4] ${BLUE}1080${RESET}\n"
+	int_sanitize 'Select quality: ' 'Error: Quality out of range' 1 2
+	quality=$(printf "$ret_val" | grep -o "START:[0-9]\+" | sed "s/START://")
 
-	int_sanitize 'Select quality: ' 'Error: Quality out of range' 1 4
-	quality=$?
-
-	printf "\n${CYAN}[1] ${BLUE}Stream${RESET}\n"
-	printf "${CYAN}[2] ${BLUE}Download${RESET}\n"
+	printf "\n${MAGENTA}[1] ${BLUE}Stream${RESET}\n"
+	printf "${MAGENTA}[2] ${BLUE}Download${RESET}\n"
 
 	int_sanitize 'Select action: ' 'Error: Action out of range' 1 2
-	action=$?
+	action=$(printf "$ret_val" | grep -o "START:[0-9]\+" | sed "s/START://")
 
-	# Use the echo command to avoid printf invalid directive
-	# Always use HLS for streaming to avoid out-of-buffer error
-	if [ $action -eq 1 ]; then
-		hls_sources=$(echo "$api_resp" | grep -o 'apivtwo/[^"]\+referer=')
-		is_hls=1
+	printf "\n"
 
-	elif [ $action -eq 2 ]; then
+	while [ $ep_idx -le $stop_ep ]; do
 
-		# Use Yt-SD video link for 480p download
-		if [ $quality -eq 2 ]; then
-			video_link=$(echo "$api_resp" | grep -o 'https://work[^"]\+' | sed '1q;d' )
-			is_hls=0
+		stream_url=$(get_streams_url "anime" "$show_id" "$ep_idx")
+		api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" "$stream_url")
 
-		# Use Yt-HD video link for 1080p download
-		elif [ $quality -eq 4 ]; then
-			video_link=$(echo "$api_resp" | grep -o 'https://work[^"]\+' | sed '2q;d' )
-			is_hls=0
+		# Use the echo command to avoid printf invalid directive
+		# and always use HLS for streaming to avoid out-of-buffer error
+		if [ $action -eq 1 ]; then
 
-		# Use HLS 360p or 720p video link to download
-		else
-			hls_sources=$(echo "$api_resp" | grep -o 'apivtwo/[^"]\+referer=')
-			is_hls=1
+			[ $quality -eq 1 ] && is_hls=0 || is_hls=1
 
-		fi
+			if [ $is_hls -eq 1 ]; then
+				hls_source=$(echo "$api_resp" | grep -o 'apivtwo/[^"]*')
+				hls_source=$(printf "$hls_source" | sed -e "s/clock/clock.json/" -e 's/\/download//')
+				api_resp=$(curl -s "https://allanime.pro/${hls_source}")
+				video_url=$(echo "$api_resp" | grep -o 'https://[^"]*' | head -n 1)
 
-	fi
+			else
+				video_url=$(echo "$api_resp" | grep -o 'https://work[^"]\+' | sed "1q;d")
 
-	if [ $is_hls -eq 1 ]; then
-		hls_sources=$(printf "$hls_sources" | sed "s/clock/clock.json/")
-		api_resp=$(curl -s "https://mblog.allanimenews.com/${hls_sources}")
+			fi
 
-		hls_link=$(printf "$api_resp" | grep -o 'https://work[^"]\+' | head -n 1)
-		hls_playlist=$(curl -s "$hls_link")
-
-		idx=$((1 + (2 * $quality)))
-		video_link=$(printf "$hls_playlist" | sed "${idx}q;d")
-
-	fi
-
-	if [ $action -eq 1 ]; then
-		
-		if [ "$PLATFORM" = "Android" ]; then
-			nohup am start --user 0 -a android.intent.action.VIEW -d "$video_link" -n is.xyz.mpv/.MPVActivity > /dev/null 2>&1 &
-
-		elif [ "$PLATFORM" = "GNU/Linux" ]; then
-			anime_name=$(printf "$name_list\n" | sed "${chosen_one}q;d")
-			nohup mpv --force-media-title="$anime_name Episode $episode" "$video_link" > /dev/null 2>&1 &
+		elif [ $action -eq 2 ]; then
+			# Use Yt-SD for 480p and Yt-HD for 1080p download
+			video_url=$(echo "$api_resp" | grep -o 'https://work[^"]\+' | sed "${quality}q;d")
 
 		fi
 
-		printf "\n${GREEN}You should see the MPV window shortly${RESET}\n"
+		if ! [ -d "$DATA_DIR/anime/$anime_name" ]; then
+			mkdir -p "$DATA_DIR/anime/$anime_name"
+			anime_dl_dir="$DATA_DIR/anime/$anime_name"
 
-	else
-		anime_name=$(printf "$name_list\n" | sed "${chosen_one}q;d")
+		fi
 
-		if [ $is_hls -eq 1 ]; then
-			curl -s -o dl.m3u8 "$video_link"
-			ffmpeg -loglevel error -stats -i dl.m3u8 -c copy "$anime_name Episode $episode"
+		if [ $action -eq 1 ]; then
+			video_links="${video_links}$video_url\n"
+			printf "${GREEN}Episode ${ep_idx} URL found${RESET}\n"
 
 		else
-			curl -o "$anime_name Episode $episode" "$video_link"
+			printf "${YELLOW}Downloading Episode ${ep_idx}...${RESET}\n\n"
+			curl -o "$anime_dl_dir/Episode ${ep_idx}.mp4" "$video_url"
+			printf "\n\n${YELLOW}Episode ${ep_idx} downloaded.${RESET}\n\n"
 
 		fi
+
+		ep_idx=$(($ep_idx + 1))
+
+	done
+
+	ep_idx=$start_ep
+
+	if [ $action -eq 1 ]; then
+
+		while [ $ep_idx -le $stop_ep ]; do
+			counter=$(($counter + 1))
+			video_url=$(echo -e $video_links | sed "${counter}q;d")
+
+			printf "${YELLOW}Playing episode ${ep_idx}...${RESET}\n"
+
+			case "$PLATFORM" in
+				"Android") nohup am start --user 0 -a android.intent.action.VIEW -d "$video_url" -n is.xyz.mpv/.MPVActivity > /dev/null 2>&1 &;;
+				"GNU/Linux") nohup mpv --force-media-title="$anime_name" "$video_url" > /dev/null 2>&1 &;;
+				*) printf "${YELLOW}Unknown platform. Writing video links to stderr${RESET}\n\n"; echo "${GREEN}$video_links${$RESET}" >&2; break;;
+
+			esac
+
+			ep_idx=$(($ep_idx + 1))
+			[ $ep_idx -gt $stop_ep ] && break
+
+			printf "\n${MAGENTA}[1] ${BLUE}Next episode${RESET}\n"
+			printf "${MAGENTA}[2] ${BLUE}Quit${RESET}\n"
+
+			int_sanitize "Select action: " "Error: action out of range" 1 2
+			action=$(printf "$ret_val" | grep -o "START:[0-9]\+" | sed "s/START://")
+
+			case $action in
+				1) continue;;
+				2) break;;
+
+			esac
+
+		done
 
 	fi
 
@@ -236,13 +313,12 @@ music_handler() {
 
 	done
 
-	printf "$song_list"
-
 	int_sanitize 'Select song: ' 'Error: Song out of range' 1 $songs_len
-	selected=$?
+	selected=$(printf "$ret_val" | grep -o "START:[0-9]\+" | sed "s/START://")
 
 	song_link=$(printf "$song_url\n" | sed "${selected}q;d")
 	song_link="https://aln.youtube-anime.com/${song_link}"
+	selected_song_name=$(printf "$song_name" | sed "${selected}q;d")
 
 	printf '\n'
 
@@ -250,17 +326,134 @@ music_handler() {
 	printf "${CYAN}[2]${RESET} ${BLUE}Download${RESET}\n"
 
 	int_sanitize 'Select action: ' 'Error: Action out of range' 1 2
-	action=$?
+	action=$(printf "$ret_val" | grep -o "START:[0-9]\+" | sed "s/START://")
 
 	if [ $action -eq 1 ]; then
-		nohup am start --user 0 -a android.intent.action.VIEW -d "$song_link" -n is.xyz.mpv/.MPVActivity > /dev/null 2>&1 &
-		printf "\n${GREEN}You should see the MPV window shortly${RESET}\n"
+
+		case "$PLATFORM" in
+
+			"Android") nohup am start --user 0 -a android.intent.action.VIEW -d "$song_link" -n is.xyz.mpv/.MPVActivity > /dev/null 2>&1 &;;
+			"GNU/Linux") nohup mpv --force-media-title="$selected_song_name" "$song_link" > /dev/null 2>&1 &;;
+			*) printf "${YELLOW}Unknown platform. Writing song link to song link to stderr"${RESET}\n\n; echo "${GREEN}$song_link${RESET}"
+
+		esac
 
 	elif [ $action -eq 2 ]; then
-		selected_song_name=$(printf "$song_name" | sed "${selected}q;d")
-		curl -o "${selected_song_name}.mp3" "$song_link"
+
+		if ! [ -d "$DATA_DIR/song" ]; then
+			mkdir -p "$DATA_DIR/song"
+
+		fi
+
+		curl -o "${DATA_DIR}/song/${selected_song_name}.mp3" "$song_link"
 
 	fi
+
+}
+
+manga_handler() {
+	local img_tags api_resp name_list id_list manga_chap_list list_len counter chosen_one curr_id manga_name available_chp start_chp end_chp chp_idx action panel_url_head chp_detail_url chapters_idx proper_idx read_url panel_url_list panel_url_len panel_idx img_filename
+
+	img_tags=""
+
+	api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" "$query_url")
+
+	name_list=$(printf "$api_resp" | grep -o 'name":"[^"]\+' | sed 's/name":"//g')
+	id_list=$(printf "$api_resp" | grep -o '_id":"[^"]\+' | sed 's/_id":"//g')
+	manga_chap_list=$(printf "$api_resp" | grep -o 'availableChapters":{"sub":[0-9]\+' | sed 's/availableChapters":{"sub"://g')
+
+	list_len=$(printf "$name_list\n" | wc -l)
+	counter=0
+
+	printf "$name_list\n" | while read line; do
+		counter=$((counter + 1))
+		printf "${CYAN}[$counter] ${BLUE}$line${RESET}\n"
+
+	done
+
+	int_sanitize "Select manga: " "Error: Manga out of range" 1 $list_len
+	chosen_one=$(printf "$ret_val" | grep -o "START:[0-9]\+" | sed "s/START://")
+
+	curr_id=$(printf "$id_list\n" | sed "${chosen_one}q;d")
+	manga_name=$(printf "$name_list\n" | sed "${chosen_one}q;d")
+	available_chp=$(printf "$manga_chap_list\n" | sed "${chosen_one}q;d")
+
+	int_sanitize "Select chapter [1-${available_chp}]: " "Error: Chapter out of range" 1 $available_chp
+	start_chp=$(printf "$ret_val" | grep -o "START:[0-9]\+" | sed "s/START://")
+	end_chp=$(printf "$ret_val" | grep -o "STOP:[0-9]\+" | sed "s/STOP://")
+	chp_idx=$start_chp
+	[ -z $end_chp ] && end_chp=$start_chp
+
+	printf "\n${CYAN}[1] ${BLUE}Stream${RESET}\n"
+	printf "${CYAN}[2] ${BLUE}Download${RESET}\n"
+
+	int_sanitize "Select action: " "Error: Action out of range" 1 2
+	action=$(printf "$ret_val" | grep -o "START:[0-9]\+" | sed "s/START://")
+
+	panel_url_head="https://aln.youtube-anime.com/"
+	chp_detail_url=$(manga_get_detail_url "$curr_id")
+	api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" "$chp_detail_url")
+	chapters_idx=$(echo "$api_resp" | grep -o 'sub":\[.*"1"\]' | grep -o '"[^,\[]*"' | sed 's/"//g' | tac)
+
+	printf "\n${YELLOW}Generating HTML file...${RESET}\n"
+
+	if ! [ -d "$DATA_DIR/manga/$manga_name" ]; then
+		mkdir -p "$DATA_DIR/manga/$manga_name"
+	fi
+
+	while [ $chp_idx -le $end_chp ]; do
+		proper_idx=$(printf "$chapters_idx\n" | sed "${chp_idx}q;d")
+		read_url=$(get_streams_url "manga" "$curr_id" "$proper_idx")
+		api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" "$read_url")
+		panel_url_list=$(echo "$api_resp" | grep -o 'url":"images[^"]*' | sed 's/url":"//g')
+		panel_url_len=$(echo "$panel_url_list" | wc -l)
+		panel_idx=1
+
+		if [ $action -eq 1 ]; then
+
+			while [ $panel_idx -le $panel_url_len ]; do
+				panel=$(echo "$panel_url_list" | awk "NR==${panel_idx}")
+				img_tags="${img_tags}<img src='${panel_url_head}${panel}' alt='Failed to load image'>\n"
+				panel_idx=$(($panel_idx + 1))
+
+			done
+
+		else
+			counter=0
+
+			while [ $panel_idx -le $panel_url_len ]; do
+				img_filename="$DATA_DIR/manga/$manga_name/chp${chp_idx}_${panel_idx}.jpg"
+				panel=$(echo "$panel_url_list" | awk "NR==${panel_idx}")
+				curl -s -o $img_filename "${panel_url_head}${panel}"
+				img_tags="${img_tags}<img src='$img_filename' alt='Failed to load image'>\n"
+				panel_idx=$(($panel_idx + 1))
+
+			done
+
+		fi
+
+		chp_idx=$(($chp_idx + 1))
+
+		done
+
+	cat << EOF > "$DATA_DIR/manga/$manga_name/${start_chp}-${end_chp}.html"
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<title>$manga_name</title>
+		<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+		<style type='text/css'>body { background-color: #3B3A39; }</style>
+	</head>
+
+	<body>
+		$(echo $img_tags)
+	</body>
+
+</html>
+EOF
+
+	printf "\n${GREEN}HTML file generated. Open the file with web browser at ${DATA_DIR}/manga/${manga_name}/${start_chp}-${end_chp}.html${RESET}\n"
 
 }
 
@@ -274,7 +467,11 @@ elif [ "$1" = "music" ]; then
 	base_prompt 'music'
 	music_handler
 
+elif [ "$1" = "manga" ]; then
+	base_prompt 'manga'
+	manga_handler
+
 else
-	printf "${RED}Error: Unknown subcommand. Available subcommand is 'anime' and 'music'${RESET}\n"
+	printf "${RED}Error: Unknown subcommand. Available subcommand is 'anime', 'music', and 'manga'${RESET}\n"
 
 fi
