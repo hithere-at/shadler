@@ -424,7 +424,7 @@ manga_handler() {
 			while [ $panel_idx -le $panel_url_len ]; do
 				img_filename="$DATA_DIR/manga/$manga_name/chp${chp_idx}_${panel_idx}.jpg"
 				panel=$(echo "$panel_url_list" | awk "NR==${panel_idx}")
-				curl -s -o $img_filename "${panel_url_head}${panel}"
+				curl -s -o "$img_filename" "${panel_url_head}${panel}"
 				img_tags="${img_tags}<img src='$img_filename' alt='Failed to load image'>\n"
 				panel_idx=$(($panel_idx + 1))
 
