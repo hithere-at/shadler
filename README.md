@@ -2,14 +2,13 @@
 A shell script to stream and download anime from AllAnime
 
 ## Usage
-`$ shadler anime` to watch anime, `$ shadler music` to listen to anime songs, and `$ shadler manga` to read manga.
+`$ shadler anime` to watch anime and `$ shadler manga` to read manga.
 
 ## Dependencies
 * curl
 * sed
 * grep
 * mpv for video player
-* ffmpeg for m3u8 playlist downloader
 
 ## Installation
 
@@ -18,8 +17,7 @@ Using termux require you to have `mpv-android` installed on your phone. You can 
 
 ```sh
 curl -o shadler 'https://raw.githubusercontent.com/hithere-at/shadler/master/shadler'
-apt install -y ffmpeg
-mv shadler $PREFIX/bin
+cp shadler $PREFIX/bin
 ```
 
 ### GNU/Linux
@@ -27,15 +25,15 @@ mv shadler $PREFIX/bin
 ##### Ubuntu
 ```sh
 curl -o shadler 'https://raw.githubusercontent.com/hithere-at/shadler/master/shadler'
-sudo apt install -y ffmpeg mpv
-sudo mv shadler /usr/local/bin
+sudo apt install -y mpv
+sudo cp shadler /usr/local/bin
 ```
 
 ##### Arch linux
 ```sh
 curl -o shadler 'https://raw.githubusercontent.com/hithere-at/shadler/master/shadler'
-sudo pacman -S ffmpeg mpv
-sudo mv shadler /usr/local/bin
+sudo pacman -S mpv
+sudo cp shadler /usr/local/bin
 ```
 
 ## Supported platform
@@ -46,7 +44,7 @@ Currently, there is no Windows support. It is possible to use PowerShell on Linu
 
 ## To-do list
 - [x] Core functionality (e.g streaming and downloding)
-- [ ] AllAnime API documentation `TODO`
+- [ ] `TODO` AllAnime API documentation
 - [x] Support for other platforms
 - [ ] Support for using arguments using `getopt`
 

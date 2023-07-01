@@ -23,9 +23,6 @@ ANIME_STREAM_VARS='\{%22showId%22:%22#ANIME_ID#%22,%22translationType%22:%22sub%
 ANIME_QUERY_HASH="06327bc10dd682e1ee7e07b6db9c16e9ad2fd56c1b769e47513128cd5c9fc77a"
 ANIME_STREAM_HASH="5f1a64b73793cc2234a389cf3a8f93ad82de7043017dd551f38f65b89daa65e0"
 
-MUSIC_QUERY_VARS='\{%22search%22:\{%22query%22:%22#QUERY#%22\},%22limit%22:10,%22page%22:1\}'
-MUSIC_QUERY_HASH="1c2cf5d3eab363ad9976cc448db54df789f10cfa092ddd58fbb08d521036138a"
-
 MANGA_QUERY_VARS='\{%22search%22:\{%22query%22:%22#QUERY#%22,%22isManga%22:true\},%22limit%22:26,%22page%22:1,%22translationType%22:%22sub%22,%22countryOrigin%22:%22ALL%22\}'
 MANGA_QUERY_HASH="a27e57ef5de5bae714db701fb7b5cf57e13d57938fc6256f7d5c70a975d11f3d"
 MANGA_DETAIL_VARS='\{%22_id%22:%22#MANGA_ID#%22\}'
@@ -96,17 +93,13 @@ get_query_url() {
 		query_obj=$(printf '%s' "$ANIME_QUERY_VARS" | sed -e "s/#QUERY#/$1/")
 		ext_obj=$(printf '%s' "$API_EXT" | sed -e "s/#HASH#/$ANIME_QUERY_HASH/")
 
-	elif [ "$2" = "music" ]; then
-		query_obj=$(printf '%s' "$MUSIC_QUERY_VARS" | sed -e "s/#QUERY#/$1/")
-		ext_obj=$(printf '%s' "$API_EXT" | sed -e "s/#HASH#/$MUSIC_QUERY_HASH/")
-
 	elif [ "$2" = "manga" ]; then
 		query_obj=$(printf '%s' "$MANGA_QUERY_VARS" | sed -e "s/#QUERY#/$1/")
 		ext_obj=$(printf '%s' "$API_EXT" | sed -e "s/#HASH#/$MANGA_QUERY_HASH/")
 
 	fi
 
-	printf 'https://api.allanime.to/allanimeapi?variables=%s&extensions=%s' "$query_obj" "$ext_obj"
+	printf 'https://api.allanime.day/api?variables=%s&extensions=%s' "$query_obj" "$ext_obj"
 
 }
 
@@ -116,7 +109,7 @@ manga_get_detail_url() {
 
 	detail_obj=$(printf '%s' "$MANGA_DETAIL_VARS" | sed -e "s/#MANGA_ID#/$1/")
 	ext_obj=$(printf '%s' "$API_EXT" | sed -e "s/#HASH#/$MANGA_DETAIL_HASH/")
-	printf 'https://api.allanime.to/allanimeapi?variables=%s&extensions=%s' "$detail_obj" "$ext_obj"
+	printf 'https://api.allanime.day/api?variables=%s&extensions=%s' "$detail_obj" "$ext_obj"
 
 }
 
@@ -136,7 +129,7 @@ get_streams_url() {
 
 	fi
 
-	printf 'https://api.allanime.to/allanimeapi?variables=%s&extensions=%s' "$stream_obj" "$ext_obj"
+	printf 'https://api.allanime.day/api?variables=%s&extensions=%s' "$stream_obj" "$ext_obj"
 
 }
 
@@ -156,7 +149,8 @@ anime_handler() {
 	counter=0
 	video_links=""
 
-	api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" "$query_url")
+	api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" -H 'Referer: https://allanime.to/' "$query_url")
+	# echo $api_resp "$query_url
 
 	name_list=$(printf "$api_resp" | grep -o 'name":"[^"]\+' | sed 's/name":"//g')
 	anime_id_list=$(printf "$api_resp" | grep -o '_id":"[^"]\+' | sed 's/_id":"//g')
@@ -203,7 +197,7 @@ anime_handler() {
 	while [ $ep_idx -le $stop_ep ]; do
 
 		stream_url=$(get_streams_url "anime" "$show_id" "$ep_idx")
-		api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" "$stream_url")
+		api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" -H 'Referer: https://allanime.to/' "$stream_url")
 
 		# Use the echo command to avoid printf invalid directive
 		# and always use HLS for streaming to avoid out-of-buffer error
@@ -287,76 +281,12 @@ anime_handler() {
 
 }
 
-music_handler() {
-	local api_resp song_url song_artist song_name songs_len counter idx cur_song_name cur_song_artist song_list song_link selected action selected_song_name
-
-	counter=0
-	song_list=""
-	api_resp=$(curl -s "$query_url")
-
-	printf '\n'
-
-	song_url=$(printf "$api_resp" | grep -o 'url":"[^"]\+' | sed 's/url":"//g')
-	song_artist=$(printf "$api_resp" | grep -o 'artist":\(null\|{"name":{"full":"[^"]\+\)' | sed -e 's/artist"://g' -e 's/{"name":{"full":"//g')
-	song_name=$(printf "$api_resp" | grep -o 'musicTitle":{"full":"[^"]\+' | sed 's/musicTitle":{"full":"//g')
-
-	songs_len=$(printf "$song_url\n" | wc -l)
-
-	while ! [ $counter -eq $songs_len ]; do
-		idx=$((counter + 1))
-		cur_song_name=$(printf "$song_name\n" | sed "${idx}q;d")
-		cur_song_artist=$(printf "$song_artist\n" | sed "${idx}q;d")
-
-		song_list="${song_list}${CYAN}[${idx}]${RESET} ${BLUE}$cur_song_name - $cur_song_artist${RESET}\n"
-
-		counter=$((counter + 1))
-
-	done
-
-	int_sanitize 'Select song: ' 'Error: Song out of range' 1 $songs_len
-	selected=$(printf "$ret_val" | grep -o "START:[0-9]\+" | sed "s/START://")
-
-	song_link=$(printf "$song_url\n" | sed "${selected}q;d")
-	song_link="https://aln.youtube-anime.com/${song_link}"
-	selected_song_name=$(printf "$song_name" | sed "${selected}q;d")
-
-	printf '\n'
-
-	printf "${CYAN}[1]${RESET} ${BLUE}Stream${RESET}\n"
-	printf "${CYAN}[2]${RESET} ${BLUE}Download${RESET}\n"
-
-	int_sanitize 'Select action: ' 'Error: Action out of range' 1 2
-	action=$(printf "$ret_val" | grep -o "START:[0-9]\+" | sed "s/START://")
-
-	if [ $action -eq 1 ]; then
-
-		case "$PLATFORM" in
-
-			"Android") nohup am start --user 0 -a android.intent.action.VIEW -d "$song_link" -n is.xyz.mpv/.MPVActivity > /dev/null 2>&1 &;;
-			"GNU/Linux") nohup mpv --force-media-title="$selected_song_name" "$song_link" > /dev/null 2>&1 &;;
-			*) printf "${YELLOW}Unknown platform. Writing song link to song link to stderr"${RESET}\n\n; echo "${GREEN}$song_link${RESET}"
-
-		esac
-
-	elif [ $action -eq 2 ]; then
-
-		if ! [ -d "$DATA_DIR/song" ]; then
-			mkdir -p "$DATA_DIR/song"
-
-		fi
-
-		curl -o "${DATA_DIR}/song/${selected_song_name}.mp3" "$song_link"
-
-	fi
-
-}
-
 manga_handler() {
 	local img_tags api_resp name_list id_list manga_chap_list list_len counter chosen_one curr_id manga_name available_chp start_chp end_chp chp_idx action panel_url_head chp_detail_url chapters_idx proper_idx read_url panel_url_list panel_url_len panel_idx img_filename
 
 	img_tags=""
 
-	api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" "$query_url")
+	api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" -H 'Referer: https://allanime.to/' "$query_url")
 
 	name_list=$(printf "$api_resp" | grep -o 'name":"[^"]\+' | sed 's/name":"//g')
 	id_list=$(printf "$api_resp" | grep -o '_id":"[^"]\+' | sed 's/_id":"//g')
@@ -392,7 +322,7 @@ manga_handler() {
 
 	panel_url_head="https://aln.youtube-anime.com/"
 	chp_detail_url=$(manga_get_detail_url "$curr_id")
-	api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" "$chp_detail_url")
+	api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" -H 'Referer: https://allanime.to/' "$chp_detail_url")
 	chapters_idx=$(echo "$api_resp" | grep -o 'sub":\[.*"1"\]' | grep -o '"[^,\[]*"' | sed 's/"//g' | tac)
 
 	printf "\n${YELLOW}Generating HTML file...${RESET}\n"
@@ -404,7 +334,7 @@ manga_handler() {
 	while [ $chp_idx -le $end_chp ]; do
 		proper_idx=$(printf "$chapters_idx\n" | sed "${chp_idx}q;d")
 		read_url=$(get_streams_url "manga" "$curr_id" "$proper_idx")
-		api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" "$read_url")
+		api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" -H 'Referer: https://allanime.to/' "$read_url")
 		panel_url_list=$(echo "$api_resp" | grep -o 'url":"images[^"]*' | sed 's/url":"//g')
 		panel_url_len=$(echo "$panel_url_list" | wc -l)
 		panel_idx=1
@@ -463,15 +393,11 @@ if [ "$1" = "anime" ]; then
 	base_prompt 'anime'
 	anime_handler
 
-elif [ "$1" = "music" ]; then
-	base_prompt 'music'
-	music_handler
-
 elif [ "$1" = "manga" ]; then
 	base_prompt 'manga'
 	manga_handler
 
 else
-	printf "${RED}Error: Unknown subcommand. Available subcommand is 'anime', 'music', and 'manga'${RESET}\n"
+	printf "${RED}Error: Unknown subcommand. Available subcommand is 'anime' and 'manga'${RESET}\n"
 
 fi
