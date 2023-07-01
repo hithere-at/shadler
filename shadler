@@ -249,13 +249,12 @@ anime_handler() {
 
 		while [ $ep_idx -le $stop_ep ]; do
 			counter=$(($counter + 1))
-			video_url=$(echo -e $video_links | sed "${counter}q;d")
 
 			printf "${YELLOW}Playing episode ${ep_idx}...${RESET}\n"
 
 			case "$PLATFORM" in
-				"Android") nohup am start --user 0 -a android.intent.action.VIEW -d "$video_url" -n is.xyz.mpv/.MPVActivity > /dev/null 2>&1 &;;
-				"GNU/Linux") nohup mpv --force-media-title="$anime_name" "$video_url" > /dev/null 2>&1 &;;
+				"Android") video_url=$(echo "$video_links" | sed "${counter}q;d"); nohup am start --user 0 -a android.intent.action.VIEW -d "$video_url" -n is.xyz.mpv/.MPVActivity > /dev/null 2>&1 &;;
+				"GNU/Linux") video_url=$(echo -e $video_links | sed "${counter}q;d"); nohup mpv --force-media-title="$anime_name" "$video_url" > /dev/null 2>&1 &;;
 				*) printf "${YELLOW}Unknown platform. Writing video links to stderr${RESET}\n\n"; echo "${GREEN}$video_links${$RESET}" >&2; break;;
 
 			esac
