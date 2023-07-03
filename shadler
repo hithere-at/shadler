@@ -174,8 +174,6 @@ preparse_handler() {
 			-v | --vlc) [ "$PLATFORM" = "GNU/Linux" ] && PLAYER="vlc" || PLAYER="android_vlc";;
 			-n | --nextplay) [ "$PLATFORM" = "Android" ] && PLAYER="nextplayer" || PLAYER="mpv";;
 			-d | --download) action=2;;
-			-t | --hires) quality=2;;
-			-r | --lowres) quality=1;;
 
 		esac
 
@@ -196,8 +194,6 @@ Options:
     -v | --vlc                    Stream using VLC media player
     -n | --nextplay               Stream using NextPlayer. Available only on Android
     -d | --download               Download anime episode or download manga chapters for offline reading
-    -t | --hires                  Choose high resolution (1080p) for video. Only applies to anime subcommand
-    -r | --lowres                 Choose low resolution (480p) for video. Only applies to anime subcommand
 EOF
 
 }
@@ -238,15 +234,6 @@ anime_handler() {
 	stop_ep=$(printf "$ret_val" | grep -o "STOP:[0-9]\+" | sed "s/STOP://")
 	[ -z $stop_ep ] && stop_ep=$start_ep
 
-	if [ -z $quality ]; then
-		printf "\n${MAGENTA}[1] ${BLUE}Low${RESET}\n"
-		printf "${MAGENTA}[2] ${BLUE}High${RESET}\n"
-
-		int_sanitize 'Select quality: ' 'Error: Quality out of range' 1 2
-		quality=$(printf "$ret_val" | grep -o "START:[0-9]\+" | sed "s/START://")
-
-	fi
-
 	if [ -z $action ]; then
 		printf "\n${MAGENTA}[1] ${BLUE}Stream${RESET}\n"
 		printf "${MAGENTA}[2] ${BLUE}Download${RESET}\n"
@@ -258,39 +245,23 @@ anime_handler() {
 
 	printf "\n"
 
+	if ! [ -d "$DATA_DIR/anime/$anime_name" ]; then
+		mkdir -p "$DATA_DIR/anime/$anime_name"
+
+	fi
+
+	anime_dl_dir="$DATA_DIR/anime/$anime_name"
+
 	while [ $ep_idx -le $stop_ep ]; do
 
 		stream_url=$(get_streams_url "anime" "$show_id" "$ep_idx")
 		api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" -H 'Referer: https://allanime.to/' "$stream_url")
 
 		# Use the echo command to avoid printf invalid directive
-		# and always use HLS for streaming to avoid out-of-buffer error
-		if [ $action -eq 1 ]; then
-
-			[ $quality -eq 1 ] && is_hls=0 || is_hls=1
-
-			if [ $is_hls -eq 1 ]; then
-				hls_source=$(echo "$api_resp" | grep -o 'apivtwo/[^"]*')
-				hls_source=$(printf "$hls_source" | sed -e "s/clock/clock.json/" -e 's/\/download//')
-				api_resp=$(curl -s "https://allanime.pro/${hls_source}")
-				video_url=$(echo "$api_resp" | grep -o 'https://[^"]*' | head -n 1)
-
-			else
-				video_url=$(echo "$api_resp" | grep -o 'https://work[^"]\+' | sed "1q;d")
-
-			fi
-
-		elif [ $action -eq 2 ]; then
-			# Use Yt-SD for 480p and Yt-HD for 1080p download
-			video_url=$(echo "$api_resp" | grep -o 'https://work[^"]\+' | sed "${quality}q;d")
-
-		fi
-
-		if ! [ -d "$DATA_DIR/anime/$anime_name" ]; then
-			mkdir -p "$DATA_DIR/anime/$anime_name"
-			anime_dl_dir="$DATA_DIR/anime/$anime_name"
-
-		fi
+		hls_source=$(echo "$api_resp" | grep -o 'apivtwo/[^"]*')
+		hls_source=$(printf "$hls_source" | sed -e "s/clock/clock.json/" -e 's/\/download//')
+		api_resp=$(curl -s "https://allanime.pro/${hls_source}")
+		video_url=$(echo "$api_resp" | grep -o 'https://[^"]*' | head -n 1)
 
 		if [ $action -eq 1 ]; then
 			video_links="${video_links}$video_url\n"
@@ -299,7 +270,7 @@ anime_handler() {
 		else
 			printf "${YELLOW}Downloading Episode ${ep_idx}...${RESET}\n\n"
 			curl -o "$anime_dl_dir/Episode ${ep_idx}.mp4" "$video_url"
-			printf "\n\n${YELLOW}Episode ${ep_idx} downloaded at $anime_dl_dir.${RESET}\n\n"
+			printf "\n\n${YELLOW}Episode $ep_idx downloaded at ${anime_dl_dir}/Episode ${ep_idx}.mp4${RESET}\n\n"
 
 		fi
 
