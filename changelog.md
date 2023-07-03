@@ -17,3 +17,10 @@ Addition of `manga` subcommand
 - Added options support
 - Added streaming using Next Player. Available only on Android
 - Added streaming using VLC media player. Available on both platforms
+
+## v2.3
+- Fix anime download
+- Removingg Yt-SD related codes as they have dropped the source
+
+## v2.4
+- Fix manga not appearing because of special characters, specifically double quotes e.g `"Oshi no Ko"`
