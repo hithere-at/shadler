@@ -12,3 +12,8 @@ Addition of `manga` subcommand
 ## v2.1
 - Fix API URL change. `api.allanime.to/allanimeapi` -> `api.allanime.day/api` and set `Referer`  header to fix website down error message
 - Delete music subcommand as they *seems* to not provide anime musics anymore
+
+## v2.2
+- Added options support
+- Added streaming using Next Player. Available only on Android
+- Added streaming using VLC media player. Available on both platforms
