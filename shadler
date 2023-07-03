@@ -324,7 +324,7 @@ manga_handler() {
 
 	api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" -H 'Referer: https://allanime.to/' "$query_url")
 
-	name_list=$(printf "$api_resp" | grep -o 'name":"[^"]\+' | sed 's/name":"//g')
+	name_list=$(printf "$api_resp" | grep -o 'name":"[^,]\+' | sed -e 's/name":"\|\\"\|"//g')
 	id_list=$(printf "$api_resp" | grep -o '_id":"[^"]\+' | sed 's/_id":"//g')
 	manga_chap_list=$(printf "$api_resp" | grep -o 'availableChapters":{"sub":[0-9]\+' | sed 's/availableChapters":{"sub"://g')
 
