@@ -46,7 +46,7 @@ Currently, there is no Windows support. It is possible to use PowerShell on Linu
 - [x] Core functionality (e.g streaming and downloding)
 - [ ] `TODO` AllAnime API documentation
 - [x] Support for other platforms
-- [ ] Support for using arguments using `getopt`
+- [x] Support for using arguments
 
 ## Notes
 - Download option for manga is broken on Termux due to Android scoped storage. Opening the HTML file using `termux-open`  will result in `Failed to load image` error. This is due to Android 11+ scoped storage enforcement. Will add a fix until a workaround is found
