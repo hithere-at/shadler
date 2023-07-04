@@ -37,52 +37,68 @@ PLATFORM="$(uname -o)"
 [ "$PLATFORM" = "GNU/Linux" ] && PLAYER="mpv" || PLAYER="android_mpv"
 DATA_DIR="$HOME/.local/share/shadler"
 
+# args: $1 = input lower range
+#       $2 = input upper range
+#       $3 = lowerbound range
+#       $4 = upperbound range
+int_sanitize() {
+
+	if ! [ -z $2 ]; then
+
+		if ! [ $1 -eq $1 2> /dev/null ] || ! [ $2 -eq $2 2> /dev/null ]; then
+			return 1
+
+		elif [ $1 -gt $2 ] || [ $2 -lt $1 ] || [ $1 -lt $3 ] || [ $2 -gt $4 ]; then
+			return 2
+
+		fi
+
+	elif [ -z "$2" ]; then
+
+		if ! [ $1 -eq $1 2> /dev/null ]; then
+			return 1
+
+		elif [ $3 -gt $1 ] || [ $1 -gt $4 ]; then
+			return 2
+
+		fi
+
+	fi
+
+}
+
 # args: $1 = prompt
 #       $2 = Out of range error message
 #       $3 = lowerbound range
 #       $4 = upperbound range
-int_sanitize() {
-	local augh slop
+int_prompt() {
+	local bruh die code
 
 	while true; do
 		printf "${MAGENTA}$1${RESET}"
-		read augh slop
+		read bruh die
 
-		if [ -z "$augh" ] && [ -z "$slop" ]; then
+		if [ -z "$bruh" ] && [ -z "$die" ]; then
 			printf "${RED}Error: Input cannot be empty${RESET}\n\n" >&2
 			continue
 
-		elif ! [ -z $slop ]; then
-
-			if ! [ $augh -eq $augh 2> /dev/null ] || ! [ $slop -eq $slop 2> /dev/null ]; then
-				printf "${RED}Error: Invalid number${RESET}\n\n" >&2
-				continue
-
-			elif [ $augh -gt $slop ] || [ $slop -lt $augh ] || [ $augh -lt $3 ] || [ $slop -gt $4 ]; then
-				printf "${RED}$2${RESET}\n\n" >&2
-				continue
-
-			fi
-
-		elif [ -z "$slop" ]; then
-
-			if ! [ $augh -eq $augh 2> /dev/null ]; then
-				printf "${RED}Error: Invalid number${RESET}\n\n" >&2
-				continue
-
-			elif [ $3 -gt $augh ] || [ $augh -gt $4 ]; then
-				printf "${RED}$2${RESET}\n\n" >&2
-				continue
-
-			fi
+		else
+			int_sanitize "$bruh" "$die" $3 $4
+			code=$?
 
 		fi
+
+		case $code in
+			1) printf "${RED}Error: Invalid number${RESET}\n\n" >&2; continue;;
+			2) printf "${RED}$2${RESET}\n\n" >&2; continue;;
+
+		esac
 
 		break
 
 	done
 
-	ret_val="START:$augh STOP:$slop"
+	ret_val="START:$bruh STOP:$die"
 
 }
 
@@ -150,7 +166,7 @@ base_prompt() {
 play_video() {
 
 	case "$PLAYER" in
-		mpv) nohup mpv --force-media-tilte="$1" "$2" > /dev/null 2>&1 &;;
+		mpv) nohup mpv --force-media-title="$1" "$2" > /dev/null 2>&1 &;;
 		vlc) nohup vlc --play-and-exit --meta-title="$1" "$2" > /dev/null 2>&1 &;;
 		android_mpv) nohup am start --user 0 -a android.intent.action.VIEW -n is.xyz.mpv/.MPVActivity -d "$2" > /dev/null 2>&1 &;;
 		android_vlc) nohup am start --user 0 -a android.intent.action.VIEW -n org.videolan.vlc/org.videolan.vlc.gui.video.VideoPlayerActivity -d "$2" -e 'title' "$1" > /dev/null 2>&1 &;;
@@ -161,7 +177,7 @@ play_video() {
 }
 
 preparse_handler() {
-	local type start stop
+	local type a b
 
 	type="$1"
 	shift
@@ -170,10 +186,30 @@ preparse_handler() {
 
 		case "$1" in
 			-q | --query) shift; query_url=$(get_query_url "$1" "$type");;
-			-s | --stream) action=1;;
 			-v | --vlc) [ "$PLATFORM" = "GNU/Linux" ] && PLAYER="vlc" || PLAYER="android_vlc";;
 			-n | --nextplay) [ "$PLATFORM" = "Android" ] && PLAYER="nextplayer" || PLAYER="mpv";;
+			-s | --stream) action=1;;
 			-d | --download) action=2;;
+			-r | --range)
+				shift
+				first_letter=$(echo "$1" | head -c 1)
+				if [ "$first_letter" = '-' ]; then
+					shift
+					continue
+				else
+					a=$1
+					shift
+				fi
+				[ "$first_letter" = '-' ] && b="" || b=$1
+				int_sanitize $a $b 1 3000
+				code=$?
+				case $code in
+					1) printf "${RED}Error: Invalid number${RESET}\n\n" >&2; return 6;;
+					2) printf "${RED}Error: Invalid range${RESET}\n\n" >&2; return 6;;
+				esac
+				start=$a
+				stop=$b
+				;;
 
 		esac
 
@@ -189,17 +225,18 @@ Usage: shadler <subcommand> [options]
 
 Options:
 
-    -q | --query <keywords>       Search anime or manga with specified keywords. Please quote the keywords ._.
-    -s | --stream                 Stream anime episode or read manga chapters with online
-    -v | --vlc                    Stream using VLC media player
-    -n | --nextplay               Stream using NextPlayer. Available only on Android
-    -d | --download               Download anime episode or download manga chapters for offline reading
+    -q | --query <keywords>         Search anime or manga with specified keywords. Please quote the keywords
+    -v | --vlc                      Stream using VLC media player
+    -n | --nextplay                 Stream using NextPlayer. Available only on Android
+    -s | --stream                   Stream anime episode or read manga chapters with online
+    -d | --download                 Download anime episode or download manga chapters for offline reading
+    -r | --range <lower> <upper>    Specify episode/chapter range
 EOF
 
 }
 
 anime_handler() {
-	local counter video_links api_resp name_list anime_id_list anime_ep_list name_list_len chosen_one show_id available_ep anime_name start_ep ep_idx stop_ep stream_url is_hls hls_source video_url anime_dl_dir
+	local counter video_links api_resp name_list anime_id_list anime_ep_list name_list_len chosen_one show_id available_ep anime_name ep_idx stream_url hls_source video_url anime_dl_dir
 
 	counter=0
 	video_links=""
@@ -221,29 +258,36 @@ anime_handler() {
 
 	counter=0
 
-	int_sanitize 'Select anime: ' 'Error: Anime out of range' 1 $name_list_len
+	int_prompt 'Select anime: ' 'Error: Anime out of range' 1 $name_list_len
 	chosen_one=$(printf "$ret_val" | grep -o "START:[0-9]\+" | sed "s/START://")
 
 	show_id=$(printf "$anime_id_list\n" | sed "${chosen_one}q;d")
 	available_ep=$(printf "$anime_ep_list\n" | sed "${chosen_one}q;d")
 	anime_name=$(printf "$name_list\n" | sed "${chosen_one}q;d")
 
-	int_sanitize "Select episode [1-${available_ep}]: " 'Error: Episode out of range' 1 $available_ep
-	start_ep=$(printf "$ret_val" | grep -o "START:[0-9]\+" | sed "s/START://")
-	ep_idx=$start_ep
-	stop_ep=$(printf "$ret_val" | grep -o "STOP:[0-9]\+" | sed "s/STOP://")
-	[ -z $stop_ep ] && stop_ep=$start_ep
+	if [ -z $start ] && [ -z $stop ]; then
+		int_prompt "Select episode [1-${available_ep}]: " 'Error: Episode out of range' 1 $available_ep
+		start=$(printf "$ret_val" | grep -o "START:[0-9]\+" | sed "s/START://")
+		stop=$(printf "$ret_val" | grep -o "STOP:[0-9]\+" | sed "s/STOP://")
+
+	else
+		[ $start -gt $available_ep ] && start=$available_ep
+		if [ "$stop" = "" ] || [ $stop -gt $available_ep ]; then stop=$available_ep; fi
+
+	fi
+
+	ep_idx=$start
+	[ -z $stop ] && stop=$start
 
 	if [ -z $action ]; then
 		printf "\n${MAGENTA}[1] ${BLUE}Stream${RESET}\n"
 		printf "${MAGENTA}[2] ${BLUE}Download${RESET}\n"
 
-		int_sanitize 'Select action: ' 'Error: Action out of range' 1 2
+		int_prompt 'Select action: ' 'Error: Action out of range' 1 2
 		action=$(printf "$ret_val" | grep -o "START:[0-9]\+" | sed "s/START://")
+		printf "\n"
 
 	fi
-
-	printf "\n"
 
 	if ! [ -d "$DATA_DIR/anime/$anime_name" ]; then
 		mkdir -p "$DATA_DIR/anime/$anime_name"
@@ -252,7 +296,7 @@ anime_handler() {
 
 	anime_dl_dir="$DATA_DIR/anime/$anime_name"
 
-	while [ $ep_idx -le $stop_ep ]; do
+	while [ $ep_idx -le $stop ]; do
 
 		stream_url=$(get_streams_url "anime" "$show_id" "$ep_idx")
 		api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" -H 'Referer: https://allanime.to/' "$stream_url")
@@ -278,11 +322,11 @@ anime_handler() {
 
 	done
 
-	ep_idx=$start_ep
+	ep_idx=$start
 
 	if [ $action -eq 1 ]; then
 
-		while [ $ep_idx -le $stop_ep ]; do
+		while [ $ep_idx -le $stop ]; do
 			counter=$(($counter + 1))
 
 			printf "${YELLOW}Playing episode ${ep_idx}...${RESET}\n"
@@ -295,12 +339,12 @@ anime_handler() {
 			esac
 
 			ep_idx=$(($ep_idx + 1))
-			[ $ep_idx -gt $stop_ep ] && break
+			[ $ep_idx -gt $stop ] && break
 
 			printf "\n${MAGENTA}[1] ${BLUE}Next episode${RESET}\n"
 			printf "${MAGENTA}[2] ${BLUE}Quit${RESET}\n"
 
-			int_sanitize "Select action: " "Error: action out of range" 1 2
+			int_prompt "Select action: " "Error: action out of range" 1 2
 			action=$(printf "$ret_val" | grep -o "START:[0-9]\+" | sed "s/START://")
 
 			case $action in
@@ -316,7 +360,7 @@ anime_handler() {
 }
 
 manga_handler() {
-	local img_tags api_resp name_list id_list manga_chap_list list_len counter chosen_one curr_id manga_name available_chp start_chp end_chp chp_idx panel_url_head chp_detail_url chapters_idx proper_idx read_url panel_url_list panel_url_len panel_idx img_filename
+	local img_tags api_resp name_list id_list manga_chap_list list_len counter chosen_one curr_id manga_name available_chp chp_idx panel_url_head chp_detail_url chapters_idx proper_idx read_url panel_url_list panel_url_len panel_idx img_filename
 
 	img_tags=""
 
@@ -337,24 +381,33 @@ manga_handler() {
 
 	done
 
-	int_sanitize "Select manga: " "Error: Manga out of range" 1 $list_len
+	int_prompt "Select manga: " "Error: Manga out of range" 1 $list_len
 	chosen_one=$(printf "$ret_val" | grep -o "START:[0-9]\+" | sed "s/START://")
 
 	curr_id=$(printf "$id_list\n" | sed "${chosen_one}q;d")
 	manga_name=$(printf "$name_list\n" | sed "${chosen_one}q;d")
 	available_chp=$(printf "$manga_chap_list\n" | sed "${chosen_one}q;d")
 
-	int_sanitize "Select chapter [1-${available_chp}]: " "Error: Chapter out of range" 1 $available_chp
-	start_chp=$(printf "$ret_val" | grep -o "START:[0-9]\+" | sed "s/START://")
-	end_chp=$(printf "$ret_val" | grep -o "STOP:[0-9]\+" | sed "s/STOP://")
-	chp_idx=$start_chp
-	[ -z $end_chp ] && end_chp=$start_chp
+
+	if [ -z "$start" ] && [ -z "$stop" ]; then
+		int_prompt "Select chapter [1-${available_chp}]: " "Error: Chapter out of range" 1 $available_chp
+		start=$(printf "$ret_val" | grep -o "START:[0-9]\+" | sed "s/START://")
+		stop=$(printf "$ret_val" | grep -o "STOP:[0-9]\+" | sed "s/STOP://")
+
+	else
+		[ $start -gt $available_chp ] && start=$available_chp
+		if [ "$stop" = "" ] || [ $stop -gt $available_chp ]; then stop=$available_chp; fi
+
+	fi
+
+	chp_idx=$start
+	[ -z $stop ] && stop=$start
 
 	if [ -z "$action" ]; then
 		printf "\n${CYAN}[1] ${BLUE}Stream${RESET}\n"
 		printf "${CYAN}[2] ${BLUE}Download${RESET}\n"
 
-		int_sanitize "Select action: " "Error: Action out of range" 1 2
+		int_prompt "Select action: " "Error: Action out of range" 1 2
 		action=$(printf "$ret_val" | grep -o "START:[0-9]\+" | sed "s/START://")
 
 	fi
@@ -370,7 +423,7 @@ manga_handler() {
 		mkdir -p "$DATA_DIR/manga/$manga_name"
 	fi
 
-	while [ $chp_idx -le $end_chp ]; do
+	while [ $chp_idx -le $stop ]; do
 		proper_idx=$(printf "$chapters_idx\n" | sed "${chp_idx}q;d")
 		read_url=$(get_streams_url "manga" "$curr_id" "$proper_idx")
 		api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" -H 'Referer: https://allanime.to/' "$read_url")
@@ -405,7 +458,7 @@ manga_handler() {
 
 		done
 
-	cat << EOF > "$DATA_DIR/manga/$manga_name/${start_chp}-${end_chp}.html"
+	cat << EOF > "$DATA_DIR/manga/$manga_name/${start}-${stop}.html"
 <!DOCTYPE html>
 <html>
 
@@ -422,15 +475,15 @@ manga_handler() {
 </html>
 EOF
 
-	printf "\n${GREEN}HTML file generated. Open the file with web browser at ${DATA_DIR}/manga/${manga_name}/${start_chp}-${end_chp}.html${RESET}\n"
+	printf "\n${GREEN}HTML file generated. Open the file with web browser at ${DATA_DIR}/manga/${manga_name}/${start}-${stop}.html${RESET}\n"
 
 }
 
 # MAIN
 
 case "$1" in
-	anime) preparse_handler "$@"; anime_handler;;
-	manga) preparse_handler "$@"; manga_handler;;
+	anime) preparse_handler "$@"; [ $? -eq 6 ] && exit; anime_handler;;
+	manga) preparse_handler "$@"; [ $? -eq 6 ] && exit; manga_handler;;
 	help) show_help;;
 	*) printf "${RED}Error: Unknown subcommand. Available subcommand is 'anime' and 'manga', and 'help'${RESET}\n";;
 

@@ -20,7 +20,10 @@ Addition of `manga` subcommand
 
 ## v2.3
 - Fix anime download
-- Removingg Yt-SD related codes as they have dropped the source
+- Removing Yt-SD related codes as they have dropped the source
 
 ## v2.4
 - Fix manga not appearing because of special characters, specifically double quotes e.g `"Oshi no Ko"`
+
+## v2.5
+- Added range arguments. If the selected episode/chapter is higher than the available episodes/chapters, it will default to the latest episode/chapter
