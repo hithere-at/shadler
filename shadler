@@ -43,7 +43,7 @@ DATA_DIR="$HOME/.local/share/shadler"
 #       $4 = upperbound range
 int_sanitize() {
 
-	if ! [ -z $2 ]; then
+	if ! [ -z "$2" ]; then
 
 		if ! [ $1 -eq $1 2> /dev/null ] || ! [ $2 -eq $2 2> /dev/null ]; then
 			return 1
@@ -200,7 +200,8 @@ preparse_handler() {
 					a=$1
 					shift
 				fi
-				[ "$first_letter" = '-' ] && b="" || b=$1
+				first_letter=$(echo "$1" | head -c 1)
+				[ "$first_letter" = '-' ] && b=$a || b=$1
 				int_sanitize $a $b 1 3000
 				code=$?
 				case $code in
@@ -209,6 +210,7 @@ preparse_handler() {
 				esac
 				start=$a
 				stop=$b
+				continue
 				;;
 
 		esac
