@@ -23,14 +23,15 @@ ANIME_QUERY_VARS='\{%22search%22:\{%22query%22:%22#QUERY#%22,%22allowAdult%22:fa
 ANIME_STREAM_VARS='\{%22showId%22:%22#ANIME_ID#%22,%22translationType%22:%22sub%22,%22episodeString%22:%22#EPISODE#%22\}'
 ANIME_QUERY_HASH="06327bc10dd682e1ee7e07b6db9c16e9ad2fd56c1b769e47513128cd5c9fc77a"
 ANIME_STREAM_HASH="5f1a64b73793cc2234a389cf3a8f93ad82de7043017dd551f38f65b89daa65e0"
+ANIME_DETAIL_HASH="9d7439c90f203e534ca778c4901f9aa2d3ad42c06243ab2c5e6b79612af32028"
 
 MANGA_QUERY_VARS='\{%22search%22:\{%22query%22:%22#QUERY#%22,%22isManga%22:true\},%22limit%22:26,%22page%22:1,%22translationType%22:%22sub%22,%22countryOrigin%22:%22ALL%22\}'
 MANGA_QUERY_HASH="a27e57ef5de5bae714db701fb7b5cf57e13d57938fc6256f7d5c70a975d11f3d"
-MANGA_DETAIL_VARS='\{%22_id%22:%22#MANGA_ID#%22\}'
 MANGA_DETAIL_HASH='a42e1106694628f5e4eaecd8d7ce0c73895a22a3c905c29836e2c220cf26e55f'
 MANGA_READ_VARS='\{%22mangaId%22:%22#MANGA_ID#%22,%22translationType%22:%22sub%22,%22chapterString%22:%22#CHAPTER#%22,%22limit%22:10,%22offset%22:0\}'
 MANGA_READ_HASH="295146730c381d163441c23d0761e1eae8d0333db5c30688739b1ef1f399925c"
 
+DETAIL_VARS='\{%22_id%22:%22#DEATH#%22\}'
 API_EXT='\{%22persistedQuery%22:\{%22version%22:1,%22sha256Hash%22:%22#HASH#%22\}\}'
 
 PLATFORM="$(uname -o)"
@@ -123,12 +124,13 @@ get_query_url() {
 
 }
 
-# args: $1 = manga ID
-manga_get_detail_url() {
+# args: $1 = ID
+#       $2 = SHA256 hash
+get_detail_url() {
 	local detail_obj ext_obj
 
-	detail_obj=$(printf '%s' "$MANGA_DETAIL_VARS" | sed -e "s/#MANGA_ID#/$1/")
-	ext_obj=$(printf '%s' "$API_EXT" | sed -e "s/#HASH#/$MANGA_DETAIL_HASH/")
+	detail_obj=$(printf '%s' "$DETAIL_VARS" | sed -e "s/#DEATH#/$1/")
+	ext_obj=$(printf '%s' "$API_EXT" | sed -e "s/#HASH#/$2/")
 	printf 'https://api.allanime.day/api?variables=%s&extensions=%s' "$detail_obj" "$ext_obj"
 
 }
@@ -225,6 +227,9 @@ show_help() {
 	cat << EOF
 Usage: shadler <subcommand> [options]
 
+Example: shadler anime -v -r 8 -s -q "oshi no ko"
+         shadler manga -r 10 12 -s -q "kaoru hana wa rin to saku"
+
 Options:
 
     -q | --query <keywords>         Search anime or manga with specified keywords. Please quote the keywords
@@ -238,7 +243,7 @@ EOF
 }
 
 anime_handler() {
-	local counter video_links api_resp name_list anime_id_list anime_ep_list name_list_len chosen_one show_id available_ep anime_name ep_idx stream_url hls_source video_url anime_dl_dir
+	local counter video_links api_resp name_list anime_id_list anime_ep_list name_list_len chosen_one show_id available_ep anime_name ep_idx stream_url hls_source video_url anime_dl_dir ep_detail_url good_idx ep_str
 
 	counter=0
 	video_links=""
@@ -296,11 +301,16 @@ anime_handler() {
 
 	fi
 
+	ep_detail_url=$(get_detail_url "$show_id" "$ANIME_DETAIL_HASH")
+	api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" -H 'Referer: https://allanime.to/' "$ep_detail_url")
+	good_idx=$(echo "$api_resp" | grep -o 'sub":\[.*"1"\]' | grep -o '"[^,\[]*"' | sed 's/"//g' | sed "/dub/q" | head -n -1 | tac)
+
 	anime_dl_dir="$DATA_DIR/anime/$anime_name"
 
 	while [ $ep_idx -le $stop ]; do
 
-		stream_url=$(get_streams_url "anime" "$show_id" "$ep_idx")
+		ep_str=$(printf "$good_idx\n" | sed "${ep_idx}q;d")
+		stream_url=$(get_streams_url "anime" "$show_id" "$ep_str")
 		api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" -H 'Referer: https://allanime.to/' "$stream_url")
 
 		# Use the echo command to avoid printf invalid directive
@@ -415,7 +425,7 @@ manga_handler() {
 	fi
 
 	panel_url_head="https://aln.youtube-anime.com/"
-	chp_detail_url=$(manga_get_detail_url "$curr_id")
+	chp_detail_url=$(get_detail_url "$curr_id" "$MANGA_DETAIL_HASH")
 	api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" -H 'Referer: https://allanime.to/' "$chp_detail_url")
 	chapters_idx=$(echo "$api_resp" | grep -o 'sub":\[.*"1"\]' | grep -o '"[^,\[]*"' | sed 's/"//g' | tac)
 

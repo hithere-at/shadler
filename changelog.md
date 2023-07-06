@@ -1,13 +1,13 @@
 # Changelog
 
 ## v1.0
-Initial release. Only has anime subcommand
+- Initial release. Only has anime subcommand
 
 ## v1.1
-Use `ffmpeg` for downloadig HLS playlist. I think this update also have shell rewrite, though bisecting will be a painful process
+- Use `ffmpeg` for downloadig HLS playlist. I think this update also have shell rewrite, though tracking down which commit did it will be a painful process
 
 ## v2.0
-Addition of `manga` subcommand
+- Added `manga` subcommand
 
 ## v2.1
 - Fix API URL change. `api.allanime.to/allanimeapi` -> `api.allanime.day/api` and set `Referer`  header to fix website down error message
@@ -27,3 +27,9 @@ Addition of `manga` subcommand
 
 ## v2.5
 - Added range arguments. If the selected episode/chapter is higher than the available episodes/chapters, it will default to the latest episode/chapter
+
+## v2.6
+- Fix range option `-r` doesnt accept single argument
+
+## v2.7
+- Fix anime half episodes getting ignored, making it impossible to watch
