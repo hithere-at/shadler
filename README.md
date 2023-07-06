@@ -2,7 +2,7 @@
 A shell script to stream and download anime from AllAnime
 
 ## Usage
-`$ shadler anime` to watch anime and `$ shadler manga` to read manga.
+`$ shadler anime` to watch anime and `$ shadler manga` to read manga. `$ shadler help` to get more information.
 
 ## Dependencies
 * curl
