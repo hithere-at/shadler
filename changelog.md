@@ -29,7 +29,10 @@
 - Added range arguments. If the selected episode/chapter is higher than the available episodes/chapters, it will default to the latest episode/chapter
 
 ## v2.6
-- Fix range option `-r` doesnt accept single argument
+- Fix range argument `-r` doesnt accept single argument
 
 ## v2.7
 - Fix anime half episodes getting ignored, making it impossible to watch
+
+## v2.8
+- Fix range argument `-r` doesnt accept single argument, again.

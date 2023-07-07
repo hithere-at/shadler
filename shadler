@@ -44,7 +44,17 @@ DATA_DIR="$HOME/.local/share/shadler"
 #       $4 = upperbound range
 int_sanitize() {
 
-	if ! [ -z "$2" ]; then
+	if [ -z "$2" ]; then
+
+		if ! [ $1 -eq $1 2> /dev/null ]; then
+			return 1
+
+		elif [ $3 -gt $1 ] || [ $1 -gt $4 ]; then
+			return 2
+
+		fi
+
+	elif ! [ -z "$2" ]; then
 
 		if ! [ $1 -eq $1 2> /dev/null ] || ! [ $2 -eq $2 2> /dev/null ]; then
 			return 1
@@ -54,15 +64,6 @@ int_sanitize() {
 
 		fi
 
-	elif [ -z "$2" ]; then
-
-		if ! [ $1 -eq $1 2> /dev/null ]; then
-			return 1
-
-		elif [ $3 -gt $1 ] || [ $1 -gt $4 ]; then
-			return 2
-
-		fi
 
 	fi
 
@@ -179,7 +180,7 @@ play_video() {
 }
 
 preparse_handler() {
-	local type a b
+	local type a b code
 
 	type="$1"
 	shift
@@ -194,16 +195,16 @@ preparse_handler() {
 			-d | --download) action=2;;
 			-r | --range)
 				shift
-				first_letter=$(echo "$1" | head -c 1)
-				if [ "$first_letter" = '-' ]; then
-					shift
-					continue
-				else
+				first_letter=$(echo "$1" | grep -o "[0-9]\+")
+				if ! [ -z "$first_letter" ]; then
 					a=$1
 					shift
+				else
+					shift
+					continue
 				fi
-				first_letter=$(echo "$1" | head -c 1)
-				[ "$first_letter" = '-' ] && b=$a || b=$1
+				first_letter=$(echo "$1" | grep -o "[0-9]\+")
+				if ! [ -z "$first_letter" ]; then b=$1; else b=$a; fi
 				int_sanitize $a $b 1 3000
 				code=$?
 				case $code in
@@ -494,8 +495,8 @@ EOF
 # MAIN
 
 case "$1" in
-	anime) preparse_handler "$@"; [ $? -eq 6 ] && exit; anime_handler;;
-	manga) preparse_handler "$@"; [ $? -eq 6 ] && exit; manga_handler;;
+	anime) preparse_handler "$@"; anime_handler;;
+	manga) preparse_handler "$@"; manga_handler;;
 	help) show_help;;
 	*) printf "${RED}Error: Unknown subcommand. Available subcommand is 'anime' and 'manga', and 'help'${RESET}\n";;
 
