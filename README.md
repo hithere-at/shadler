@@ -13,7 +13,7 @@ A shell script to stream and download anime from AllAnime
 ## Installation
 
 ### Termux
-Using termux require you to have `mpv-android` installed on your phone. You can find it [here](https://github.com/mpv-android/mpv-android/releases)
+Using Termux requires you to have either [mpv-android](https://github.com/mpv-android/mpv-android), [NextPlayer](https://github.com/anilbeseetti/nextplayer), or [VLC](https://github.com/videolan/vlc-android) installed on your phone.
 
 ```sh
 curl -o shadler 'https://raw.githubusercontent.com/hithere-at/shadler/master/shadler'
@@ -21,6 +21,7 @@ cp shadler $PREFIX/bin
 ```
 
 ### GNU/Linux
+VLC is supported but you have to install VLC using your package manager.
 
 ##### Ubuntu
 ```sh
@@ -40,7 +41,9 @@ sudo cp shadler /usr/local/bin
 - GNU/Linux
 - Termux
 
-Currently, there is no Windows support. It is possible to use PowerShell on Linux and do the development there but that is another mess i dont want to deal, dash (sh) is already a painful experience.
+~~Currently, there is no Windows support. It is possible to use PowerShell on Linux and do the development there but that is another mess i dont want to deal, dash (sh) is already a painful experience.~~
+
+Windows supports *may* come until i get a new keyboard. The current one has broken key which makes typing annoying
 
 ## To-do list
 - [x] Core functionality (e.g streaming and downloding)
