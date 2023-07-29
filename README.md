@@ -13,7 +13,7 @@ A shell script to stream and download anime from AllAnime
 ## Installation
 
 ### Termux
-Using Termux requires you to have either [mpv-android](https://github.com/mpv-android/mpv-android), [NextPlayer](https://github.com/anilbeseetti/nextplayer), or [VLC](https://github.com/videolan/vlc-android) installed on your phone.
+Using Termux requires you to have either [mpv-android](https://github.com/mpv-android/mpv-android), [NextPlayer](https://github.com/anilbeesetti/nextplayer), or [VLC](https://github.com/videolan/vlc-android) installed on your phone.
 
 ```sh
 curl -o shadler 'https://raw.githubusercontent.com/hithere-at/shadler/master/shadler'
