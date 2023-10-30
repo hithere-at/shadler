@@ -441,7 +441,7 @@ manga_handler() {
 		proper_idx=$(printf "$chapters_idx\n" | sed "${chp_idx}q;d")
 		read_url=$(get_streams_url "manga" "$curr_id" "$proper_idx")
 		api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" -H 'Referer: https://allanime.to/' "$read_url")
-		panel_url_list=$(echo "$api_resp" | grep -o 'url":"images[^"]*' | sed 's/url":"//g')
+		panel_url_list=$(echo "$api_resp" | grep -o '"sourceName":"YoutubeAnime[^]]*' | grep -o 'url":"[^"]*' | sed 's/url":"//g')
 		panel_url_len=$(echo "$panel_url_list" | wc -l)
 		panel_idx=1
 
