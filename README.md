@@ -43,7 +43,9 @@ sudo cp shadler /usr/local/bin
 
 ~~Currently, there is no Windows support. It is possible to use PowerShell on Linux and do the development there but that is another mess i dont want to deal, dash (sh) is already a painful experience.~~
 
-Windows supports *may* come until i get a new keyboard. The current one has broken key which makes typing annoying
+~~Windows supports *may* come until i get a new keyboard. The current one has broken key which makes typing annoying~~
+
+Nah, i cant. Too much pain
 
 ## To-do list
 - [x] Core functionality (e.g streaming and downloding)
@@ -52,4 +54,4 @@ Windows supports *may* come until i get a new keyboard. The current one has brok
 - [x] Support for using arguments
 
 ## Notes
-- Download option for manga is broken on Termux due to Android scoped storage. Opening the HTML file using `termux-open`  will result in `Failed to load image` error. This is due to Android 11+ scoped storage enforcement. Will add a fix until a workaround is found
+- ~~Download option for manga is broken on Termux due to Android scoped storage. Opening the HTML file using `termux-open`  will result in `Failed to load image` error. This is due to Android 11+ scoped storage policy. Will add a fix until a workaround is found.~~ As a workaround, on Termux, reading offline will require Python 3 http.server module. This method does not use any data.

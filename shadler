@@ -36,8 +36,8 @@ DETAIL_VARS='\{%22_id%22:%22#DEATH#%22\}'
 API_EXT='\{%22persistedQuery%22:\{%22version%22:1,%22sha256Hash%22:%22#HASH#%22\}\}'
 
 PLATFORM="$(uname -o)"
-[ "$PLATFORM" = "GNU/Linux" ] && PLAYER="mpv" || PLAYER="android_mpv"
 DATA_DIR="$HOME/.local/share/shadler"
+[ "$PLATFORM" = "GNU/Linux" ] && PLAYER="mpv" || PLAYER="android_mpv"
 
 # args: $1 = input lower range
 #       $2 = input upper range
@@ -374,7 +374,7 @@ anime_handler() {
 }
 
 manga_handler() {
-	local img_tags api_resp name_list id_list manga_chap_list list_len counter chosen_one curr_id manga_name available_chp chp_idx panel_url_head chp_detail_url chapters_idx proper_idx read_url panel_url_list panel_url_len panel_idx img_filename
+	local img_tags api_resp name_list id_list manga_chap_list list_len counter chosen_one curr_id manga_name available_chp chp_idx panel_url_head chp_detail_url chapters_idx proper_idx read_url panel_url_list panel_url_len panel_idx img_filename img_path img_src
 
 	img_tags=""
 
@@ -434,7 +434,8 @@ manga_handler() {
 	printf "\n${YELLOW}Generating HTML file...${RESET}\n"
 
 	if ! [ -d "$DATA_DIR/manga/$manga_name" ]; then
-		mkdir -p "$DATA_DIR/manga/$manga_name"
+    		mkdir -p "$DATA_DIR/manga/$manga_name"
+
 	fi
 
 	while [ $chp_idx -le $stop ]; do
@@ -458,10 +459,13 @@ manga_handler() {
 			counter=0
 
 			while [ $panel_idx -le $panel_url_len ]; do
-				img_filename="$DATA_DIR/manga/$manga_name/chp${chp_idx}_${panel_idx}.jpg"
+                # Assume that panel image format will be png
+				img_path="$DATA_DIR/manga/$manga_name"
+                img_filename="chp${chp_idx}_${panel_idx}.png"
 				panel=$(echo "$panel_url_list" | awk "NR==${panel_idx}")
-				curl -s -o "$img_filename" "${panel_url_head}${panel}"
-				img_tags="${img_tags}<img src='$img_filename' alt='Failed to load image'>\n"
+				curl -s -o "$img_path/$img_filename" "${panel_url_head}${panel}"
+                [ "$PLATFORM" = "Android" ] && img_src="http://127.0.0.1:10100/${img_filename}" || img_src="$img_path/$img_filename"
+				img_tags="${img_tags}<img src='$img_src' alt='Failed to load image'>\n"
 				panel_idx=$(($panel_idx + 1))
 
 			done
@@ -489,7 +493,20 @@ manga_handler() {
 </html>
 EOF
 
-	printf "\n${GREEN}HTML file generated. Open the file with web browser at ${DATA_DIR}/manga/${manga_name}/${start}-${stop}.html${RESET}\n"
+    if [ "$PLATFORM" = "Android" ]; then
+        cat << EOF > "$DATA_DIR/manga/$manga_name/read_${start}-${stop}"
+#!/bin/sh
+python3 -m http.server -d "$DATA_DIR/manga/$manga_name/" 10100 &
+termux-open http://127.0.0.1:10100/$start-$stop.html
+EOF
+        chmod +x "$DATA_DIR/manga/$manga_name/read_${start}-${stop}"
+        printf "\n${GREEN}HTML file generated. Start reading by running the script located at $DATA_DIR/manga/$manga_name/read_${start}-${stop}${RESET}\n"
+
+    else
+
+    	printf "\n${GREEN}HTML file generated. Open the file with web browser at ${DATA_DIR}/manga/${manga_name}/${start}-${stop}.html${RESET}\n"
+
+    fi
 
 }
 
