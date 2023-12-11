@@ -1,7 +1,6 @@
 from json import loads as json_loads
 from argparse import ArgumentParser
 import urllib.request
-import requests
 
 DETAIL_VARS = '{%22_id%22:%22#DEATH#%22}'
 API_EXT = '{%22persistedQuery%22:{%22version%22:1,%22sha256Hash%22:%22#HASH#%22}}'
@@ -56,6 +55,25 @@ def get_req_res(url: str): # i have no idea what is
 
     return urllib.request.urlopen(request_obj)
 
+def int_prompt(prompt: str, lower: int, upper: int) -> int:
+
+    while True:
+        try:
+            selected_show = int(input(prompt))
+
+        except ValueError:
+            print("\nInvalid input")
+            continue
+
+        if selected_show < lower or selected_show > upper:
+            print("\nInvalid input range")
+            continue
+
+        break
+    
+    return selected_show
+
+
 def anime_handler() -> None:
 
     if len(query) == 0:
@@ -65,8 +83,18 @@ def anime_handler() -> None:
         local_query = query
 
     query_url = get_query_url("anime", local_query)
-    api_resp = get_req_res(query_url).read().decode()
-    print(api_resp)
+    api_resp = json_loads(get_req_res(query_url).read().decode())
+
+    name_ep_list = [(x["name"], x["availableEpisodes"]["sub"], x["_id"]) for x in api_resp["data"]["shows"]["edges"]]
+
+    for x, y in enumerate(name_ep_list, 1):
+        print(f"[{x}] {y[0]}")
+
+    selected_anime = int_prompt(f"Select anime [1-{len(name_ep_list)}]: ", 1, len(name_ep_list)) - 1
+    show_id = name_ep_list[selected_anime][2]
+
+    if len(can_i_name_my_var_to_range) == 0:
+        strinput(f"Select episode [1-{name_ep_list[selected_anime][1]}]: ")
 
 if please_let_me_name_my_var_to_type == "anime":
     anime_handler()
