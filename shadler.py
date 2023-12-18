@@ -30,8 +30,8 @@ opt_parser.add_argument("-n", dest="nextplayer", metavar="True|False", type=bool
 opt_args = opt_parser.parse_args()
 
 query = " ".join(opt_args.query)
-please_let_me_name_my_var_to_type = opt_args.type
-can_i_name_my_var_to_range = opt_args.range
+content_type = opt_args.type
+ep_range = opt_args.range
 stream = opt_args.stream
 download = opt_args.download
 nextplayer = opt_args.nextplayer
@@ -55,24 +55,28 @@ def get_req_res(url: str): # i have no idea what is
 
     return urllib.request.urlopen(request_obj)
 
-def int_prompt(prompt: str, lower: int, upper: int) -> int:
+def int_prompt(prompt: str, lower: int, upper: int) -> list:
 
     while True:
         try:
-            selected_show = int(input(prompt))
+            selected = input(prompt).split()
+            selected = [int(x) for x in selected]
 
-        except ValueError:
-            print("\nInvalid input")
+        except (ValueError, IndexError):
+            print("Invalid input")
             continue
 
-        if selected_show < lower or selected_show > upper:
-            print("\nInvalid input range")
+        if all([False if x < lower or x > upper else True for x in selected]) is True:
+            print("Invalid input range")
+            continue
+
+        elif selected[0] > selected[1] or selected[1] < selected[0]:
+            print("Invalid input range")
             continue
 
         break
-    
-    return selected_show
 
+    return selected
 
 def anime_handler() -> None:
 
@@ -90,13 +94,16 @@ def anime_handler() -> None:
     for x, y in enumerate(name_ep_list, 1):
         print(f"[{x}] {y[0]}")
 
-    selected_anime = int_prompt(f"Select anime [1-{len(name_ep_list)}]: ", 1, len(name_ep_list)) - 1
-    show_id = name_ep_list[selected_anime][2]
+    selected_anime = int_prompt(f"Select anime [1-{len(name_ep_list)}]: ", 1, len(name_ep_list))
+    show_id = name_ep_list[selected_anime[0]-1][2]
 
-    if len(can_i_name_my_var_to_range) == 0:
-        strinput(f"Select episode [1-{name_ep_list[selected_anime][1]}]: ")
+    if len(ep_range) == 0:
+        selected_ep = int_prompt(f"Select episode [1-{name_ep_list[selected_anime[0]-1][1]}]: ")
 
-if please_let_me_name_my_var_to_type == "anime":
+    else:
+        selected_ep = ep_range
+
+if content_type == "anime":
     anime_handler()
 
 else:

@@ -253,6 +253,7 @@ anime_handler() {
 	[ -z "$query_url" ] && base_prompt 'anime'; printf "\n"
 
 	api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" -H 'Referer: https://allanime.to/' "$query_url")
+	echo "$api_resp" | jq
 
 	name_list=$(printf "$api_resp" | grep -o 'name":"[^"]\+' | sed 's/name":"//g')
 	anime_id_list=$(printf "$api_resp" | grep -o '_id":"[^"]\+' | sed 's/_id":"//g')
