@@ -374,7 +374,7 @@ anime_handler() {
 }
 
 manga_handler() {
-	local img_tags api_resp name_list id_list manga_chap_list list_len counter chosen_one curr_id manga_name available_chp chp_idx panel_url_head chp_detail_url chapters_idx proper_idx read_url panel_url_list panel_url_len panel_idx img_filename img_path img_src
+	local img_tags api_resp name_list id_list list_len counter chosen_one curr_id manga_name available_chp chp_idx panel_url_head chp_detail_url chapters_idx proper_idx read_url panel_url_list panel_url_len panel_idx img_filename img_path img_src
 
 	img_tags=""
 
@@ -384,7 +384,6 @@ manga_handler() {
 
 	name_list=$(printf "$api_resp" | grep -o 'name":"[^,]\+' | sed -e 's/name":"\|\\"\|"//g')
 	id_list=$(printf "$api_resp" | grep -o '_id":"[^"]\+' | sed 's/_id":"//g')
-	manga_chap_list=$(printf "$api_resp" | grep -o 'availableChapters":{"sub":[0-9]\+' | sed 's/availableChapters":{"sub"://g')
 
 	list_len=$(printf "$name_list\n" | wc -l)
 	counter=0
@@ -400,7 +399,13 @@ manga_handler() {
 
 	curr_id=$(printf "$id_list\n" | sed "${chosen_one}q;d")
 	manga_name=$(printf "$name_list\n" | sed "${chosen_one}q;d")
-	available_chp=$(printf "$manga_chap_list\n" | sed "${chosen_one}q;d")
+	panel_url_head="https://aln.youtube-anime.com/"
+	chp_detail_url=$(get_detail_url "$curr_id" "$MANGA_DETAIL_HASH")
+	api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" -H 'Referer: https://allanime.to/' "$chp_detail_url")
+	# this is just insanity, please someone fix this
+	# assume that splitted chapters isnt labeled as chapter N.5
+	chapters_idx=$(echo "$api_resp" | grep -o 'sub":\[.*"1"\]' | grep -o '"[^,\[]*"' | sed 's/"//g' | tac | grep -o "^[0-9]\+.5$\|^[0-9]\+.6$\|^[0-9]\+$")
+	available_chp=$(echo "$chapters_idx" | wc -l)
 
 
 	if [ -z "$start" ] && [ -z "$stop" ]; then
@@ -425,11 +430,6 @@ manga_handler() {
 		action=$(printf "$ret_val" | grep -o "START:[0-9]\+" | sed "s/START://")
 
 	fi
-
-	panel_url_head="https://aln.youtube-anime.com/"
-	chp_detail_url=$(get_detail_url "$curr_id" "$MANGA_DETAIL_HASH")
-	api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" -H 'Referer: https://allanime.to/' "$chp_detail_url")
-	chapters_idx=$(echo "$api_resp" | grep -o 'sub":\[.*"1"\]' | grep -o '"[^,\[]*"' | sed 's/"//g' | tac)
 
 	printf "\n${YELLOW}Generating HTML file...${RESET}\n"
 
@@ -496,7 +496,7 @@ EOF
     if [ "$PLATFORM" = "Android" ]; then
         cat << EOF > "$DATA_DIR/manga/$manga_name/read_${start}-${stop}"
 #!/bin/sh
-python3 -m http.server -d "$DATA_DIR/manga/$manga_name/" 10100 &
+python3 -m http.server -d "$DATA_DIR/manga/$manga_name/" 10100 > /dev/null 2>&1 &
 termux-open http://127.0.0.1:10100/$start-$stop.html
 EOF
         chmod +x "$DATA_DIR/manga/$manga_name/read_${start}-${stop}"
