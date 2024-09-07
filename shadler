@@ -29,7 +29,6 @@ MANGA_QUERY_VARS='\{%22search%22:\{%22query%22:%22#QUERY#%22,%22isManga%22:true\
 MANGA_QUERY_HASH="a27e57ef5de5bae714db701fb7b5cf57e13d57938fc6256f7d5c70a975d11f3d"
 MANGA_DETAIL_HASH='a42e1106694628f5e4eaecd8d7ce0c73895a22a3c905c29836e2c220cf26e55f'
 MANGA_READ_VARS='\{%22mangaId%22:%22#MANGA_ID#%22,%22translationType%22:%22sub%22,%22chapterString%22:%22#CHAPTER#%22,%22limit%22:10,%22offset%22:0\}'
-#MANGA_READ_HASH="295146730c381d163441c23d0761e1eae8d0333db5c30688739b1ef1f399925c"
 MANGA_READ_HASH="121996b57011b69386b65ca8fc9e202046fc20bf68b8c8128de0d0e92a681195"
 
 DETAIL_VARS='\{%22_id%22:%22#DEATH#%22\}'
@@ -254,9 +253,9 @@ anime_handler() {
 
 	api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" -H 'Referer: https://allanime.to/' "$query_url")
 
-	name_list=$(printf "$api_resp" | grep -o 'name":"[^"]\+' | sed 's/name":"//g')
+	name_list=$(printf "$api_resp" | grep -o 'name":"[^,]\+' | sed 's/name":"\|"$\|\\//g')
 	anime_id_list=$(printf "$api_resp" | grep -o '_id":"[^"]\+' | sed 's/_id":"//g')
-	anime_ep_list=$(printf "$api_resp" | grep -o 'availableEpisodes":{"sub":[0-9]\+' | sed 's/availableEpisodes":{"sub"://g')
+	anime_ep_list=$(printf "$api_resp" | grep -o 'availableEpisodes":{"sub":[0-9]\+' | sed 's/availableEpisodes":{"sub"://g')    
 
 	name_list_len=$(printf "$name_list\n" | wc -l)
 
