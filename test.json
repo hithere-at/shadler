@@ -1,0 +1,112 @@
+{
+	"data": {
+		"shows": {
+			"pageInfo": {
+				"total": 22591
+			},
+			"edges": [
+				{
+					"_id": "pxoBGA54cmpk56MLA",
+					"name": "\"Oshi no Ko\" Season 2",
+					"englishName": "Oshi no Ko Season 2",
+					"nativeName": "【推しの子】第2期",
+					"slugTime": null,
+					"thumbnail": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx166531-dAL5MsqDHUkj.jpg",
+					"lastEpisodeInfo": {
+						"sub": {
+							"episodeString": "9"
+						}
+					},
+					"lastEpisodeDate": {
+						"sub": {
+							"hour": 15,
+							"minute": 23,
+							"year": 2024,
+							"month": 7,
+							"date": 28
+						},
+						"dub": {},
+						"raw": {}
+					},
+					"type": "TV",
+					"season": {
+						"quarter": "Summer",
+						"year": 2024
+					},
+					"score": 8.53,
+					"airedStart": {
+						"year": 2024,
+						"month": 6,
+						"date": 3,
+						"hour": 14,
+						"minute": 0
+					},
+					"availableEpisodes": {
+						"sub": 9,
+						"dub": 0,
+						"raw": 0
+					},
+					"episodeDuration": "1500000",
+					"episodeCount": "13",
+					"lastUpdateEnd": "2024-08-28T15:32:25.253Z"
+				},
+				{
+					"_id": "b3u5TprKSKHBPBcor",
+					"name": "[Oshi no Ko]",
+					"englishName": "Oshi No Ko",
+					"nativeName": "【推しの子】",
+					"slugTime": null,
+					"thumbnail": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx150672-jguvEfP0vGfW.png",
+					"lastEpisodeInfo": {
+						"sub": {
+							"episodeString": "11",
+							"notes": "Idol"
+						},
+						"dub": {
+							"episodeString": "11",
+							"notes": "Idol"
+						}
+					},
+					"lastEpisodeDate": {
+						"sub": {
+							"hour": 15,
+							"minute": 12,
+							"year": 2023,
+							"month": 5,
+							"date": 28
+						},
+						"dub": {
+							"hour": 16,
+							"minute": 22,
+							"year": 2023,
+							"month": 7,
+							"date": 2
+						},
+						"raw": {}
+					},
+					"type": "TV",
+					"season": {
+						"quarter": "Spring",
+						"year": 2023
+					},
+					"score": 8.64,
+					"airedStart": {
+						"year": 2023,
+						"month": 3,
+						"date": 12,
+						"hour": 14,
+						"minute": 0
+					},
+					"availableEpisodes": {
+						"sub": 12,
+						"dub": 11,
+						"raw": 0
+					},
+					"episodeDuration": "1440000",
+					"episodeCount": "11",
+					"lastUpdateEnd": "2024-07-04T03:15:33.175Z"
+				}
+			]
+		}
+	}
+}
