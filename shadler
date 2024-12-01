@@ -73,12 +73,15 @@ int_sanitize() {
 #       $2 = Out of range error message
 #       $3 = lowerbound range
 #       $4 = upperbound range
+#       $5 = save data
 int_prompt() {
 	local bruh die code
 
 	while true; do
 		printf "${MAGENTA}$1${RESET}"
 		read bruh die
+
+		[ $bruh = "CURR" ] && bruh="$5"
 
 		if [ -z "$bruh" ] && [ -z "$die" ]; then
 			printf "${RED}Error: Input cannot be empty${RESET}\n\n" >&2
@@ -153,6 +156,31 @@ get_streams_url() {
 	fi
 
 	printf 'https://api.allanime.day/api?variables=%s&extensions=%s' "$stream_obj" "$ext_obj"
+
+}
+
+# args: $1 = type
+#       $2 = title
+#       $3 = last read
+#       $4 = is new entry (1|0)
+save_data() {
+	if [ $4 -eq 1 ]; then
+		echo "type=$1 title=$2 $3" >> ~/.local/share/shadler/savedata.sv
+
+	else
+		sed -i "s/\(type=$1 title=$2\) [0-9]\+/\1 $3/" ~/.local/share/shadler/savedata.sv
+
+	fi
+
+}
+
+# args: $1 = type
+# args: $2 = title
+load_data() {
+	local temp
+
+	temp=$(grep "type=$1 title=$2" ~/.local/share/shadler/savedata.sv 2> /dev/null | grep -o "[0-9]\+")
+	printf "$temp"
 
 }
 
@@ -244,7 +272,7 @@ EOF
 }
 
 anime_handler() {
-	local counter video_links api_resp name_list anime_id_list anime_ep_list name_list_len chosen_one show_id available_ep anime_name ep_idx stream_url hls_source video_url anime_dl_dir ep_detail_url good_idx ep_str
+	local counter video_links api_resp name_list anime_id_list anime_ep_list name_list_len chosen_one show_id available_ep anime_name ep_idx stream_url hls_source video_url anime_dl_dir ep_detail_url good_idx ep_str last_read is_new_entry
 
 	counter=0
 	video_links=""
@@ -255,7 +283,7 @@ anime_handler() {
 
 	name_list=$(printf "$api_resp" | grep -o 'name":"[^,]\+' | sed 's/name":"\|"$\|\\//g')
 	anime_id_list=$(printf "$api_resp" | grep -o '_id":"[^"]\+' | sed 's/_id":"//g')
-	anime_ep_list=$(printf "$api_resp" | grep -o 'availableEpisodes":{"sub":[0-9]\+' | sed 's/availableEpisodes":{"sub"://g')    
+	anime_ep_list=$(printf "$api_resp" | grep -o 'availableEpisodes":{"sub":[0-9]\+' | sed 's/availableEpisodes":{"sub"://g')
 
 	name_list_len=$(printf "$name_list\n" | wc -l)
 
@@ -273,8 +301,11 @@ anime_handler() {
 	available_ep=$(printf "$anime_ep_list\n" | sed "${chosen_one}q;d")
 	anime_name=$(printf "$name_list\n" | sed "${chosen_one}q;d")
 
+	last_read=$(load_data "anime" "$anime_name")
+	[ -z "$last_read" ] && last_read=1 is_new_entry=1 || is_new_entry=0
+
 	if [ -z $start ] && [ -z $stop ]; then
-		int_prompt "Select episode [1-${available_ep}]: " 'Error: Episode out of range' 1 $available_ep
+		int_prompt "Select episode [1-${available_ep}]: " 'Error: Episode out of range' 1 $available_ep $last_read
 		start=$(printf "$ret_val" | grep -o "START:[0-9]\+" | sed "s/START://")
 		stop=$(printf "$ret_val" | grep -o "STOP:[0-9]\+" | sed "s/STOP://")
 
@@ -286,6 +317,8 @@ anime_handler() {
 
 	ep_idx=$start
 	[ -z $stop ] && stop=$start
+
+	save_data "anime" "$anime_name" $((stop + 1)) $is_new_entry
 
 	if [ -z $action ]; then
 		printf "\n${MAGENTA}[1] ${BLUE}Stream${RESET}\n"
@@ -373,7 +406,7 @@ anime_handler() {
 }
 
 manga_handler() {
-	local img_tags api_resp name_list id_list list_len counter chosen_one curr_id manga_name available_chp chp_idx panel_url_head chp_detail_url chapters_idx proper_idx read_url panel_url_list panel_url_len panel_idx img_filename img_path img_src
+	local img_tags api_resp name_list id_list list_len counter chosen_one curr_id manga_name available_chp chp_idx panel_url_head chp_detail_url chapters_idx proper_idx read_url panel_url_list panel_url_len panel_idx img_filename img_path img_src last_read is_new_entry
 
 	img_tags=""
 
@@ -406,9 +439,11 @@ manga_handler() {
 	chapters_idx=$(echo "$api_resp" | grep -o 'sub":\[.*"1"\]' | grep -o '"[^,\[]*"' | sed 's/"//g' | tac | grep -o "^[0-9]\+.5$\|^[0-9]\+.6$\|^[0-9]\+$")
 	available_chp=$(echo "$chapters_idx" | wc -l)
 
+	last_read=$(load_data "manga" "$manga_name")
+	[ -z "$last_read" ] && last_read=1 is_new_entry=1 || is_new_entry=0
 
 	if [ -z "$start" ] && [ -z "$stop" ]; then
-		int_prompt "Select chapter [1-${available_chp}]: " "Error: Chapter out of range" 1 $available_chp
+		int_prompt "Select chapter [1-${available_chp}]: " "Error: Chapter out of range" 1 $available_chp $last_read
 		start=$(printf "$ret_val" | grep -o "START:[0-9]\+" | sed "s/START://")
 		stop=$(printf "$ret_val" | grep -o "STOP:[0-9]\+" | sed "s/STOP://")
 
@@ -417,6 +452,8 @@ manga_handler() {
 		if [ "$stop" = "" ] || [ $stop -gt $available_chp ]; then stop=$available_chp; fi
 
 	fi
+
+	save_data "manga" "$manga_name" $((stop + 1)) $is_new_entry
 
 	chp_idx=$start
 	[ -z $stop ] && stop=$start
@@ -510,6 +547,7 @@ EOF
 }
 
 # MAIN
+mkdir -p ~/.local/share/shadler
 
 case "$1" in
 	anime) preparse_handler "$@"; anime_handler;;
