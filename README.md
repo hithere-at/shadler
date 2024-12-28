@@ -49,5 +49,20 @@ sudo cp shadler /usr/local/bin
 - [x] Support for other platforms
 - [x] Support for using arguments
 
+### Windows (PowerShell) suppport
+Currently, i am rewriting the entire code in PowerShell. However, the code might be similar because this is a direct port. This is a list of functions that has been rewritten in PowerShell:
+- [x] int_sanitize -> Validate-Integer
+- [x] int_prompt -> Prompt-Integer
+- [x] get_query_url -> Get-QueryURL
+- [ ] get_detail_url -> Get-DetailURL
+- [ ] save_data -> Save-ShadlerData
+- [ ] load_data -> Load-ShadlerData
+- [ ] base_prompt -> Prompt-Base
+- [ ] play_video -> Play-Video
+- [ ] preparse_handler -> ???
+- [x] show_help -> Show-ShadlerHelp
+- [ ] anime_handler -> Handle-AnimeSubcommand
+- [ ] manga_handler -> Handle-MangaSubcommand
+
 ## Notes
-- ~~Download option for manga is broken on Termux due to Android scoped storage. Opening the HTML file using `termux-open`  will result in `Failed to load image` error. This is due to Android 11+ scoped storage policy. Will add a fix until a workaround is found.~~ As a workaround, on Termux, reading offline will require Python 3 http.server module. This method does not use any data.
+- ~~Download option for manga is broken on Termux due to Android scoped storage. Opening the HTML file using `termux-open`  will result in `Failed to load image` error. This is due to Android 11+ scoped storage policy. Will add a fix until a workaround is found.~~ As a workaround, on Termux, reading offline will require Python 3 http.server module. This method does not use any mobile data.
