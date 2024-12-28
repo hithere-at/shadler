@@ -41,11 +41,7 @@ sudo cp shadler /usr/local/bin
 - GNU/Linux
 - Termux
 
-~~Currently, there is no Windows support. It is possible to use PowerShell on Linux and do the development there but that is another mess i dont want to deal, dash (sh) is already a painful experience.~~
-
-~~Windows supports *may* come until i get a new keyboard. The current one has broken key which makes typing annoying~~
-
-Nah, i cant. Too much pain
+> I am currently trying to port this to PowerShell 4.0, which is very old and has been around since Windows 8.1. Please wait :D
 
 ## To-do list
 - [x] Core functionality (e.g streaming and downloding)
