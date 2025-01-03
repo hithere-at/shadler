@@ -54,15 +54,18 @@ Currently, i am rewriting the entire code in PowerShell. However, the code might
 - [x] int_sanitize -> Validate-Integer
 - [x] int_prompt -> Prompt-Integer
 - [x] get_query_url -> Get-QueryURL
-- [ ] get_detail_url -> Get-DetailURL
+- [x] get_detail_url -> Get-DetailURL
+- [x] get_streams_url -> Get-StreamURL
 - [ ] save_data -> Save-ShadlerData
 - [ ] load_data -> Load-ShadlerData
-- [ ] base_prompt -> Prompt-Base
+- [x] base_prompt -> Shadler-BasePrompt
 - [ ] play_video -> Play-Video
-- [ ] preparse_handler -> ???
+- [x] preparse_handler -> **reworked**
 - [x] show_help -> Show-ShadlerHelp
 - [ ] anime_handler -> Handle-AnimeSubcommand
 - [ ] manga_handler -> Handle-MangaSubcommand
+
+I also plan to tidy up the code instead of porting it 1:1 with the original. For now, range input validation (Validate-Integer, Validate-InputRange) is reworked for better readability.
 
 ## Notes
 - ~~Download option for manga is broken on Termux due to Android scoped storage. Opening the HTML file using `termux-open`  will result in `Failed to load image` error. This is due to Android 11+ scoped storage policy. Will add a fix until a workaround is found.~~ As a workaround, on Termux, reading offline will require Python 3 http.server module. This method does not use any mobile data.
