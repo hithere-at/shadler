@@ -41,7 +41,7 @@ sudo cp shadler /usr/local/bin
 - GNU/Linux
 - Termux
 
-> I am currently trying to port this to PowerShell 4.0, which is very old and has been around since Windows 8.1. Please wait :D
+> Windows port using WinUI 3 is on progress at [shadler-winui](https://github.com/hithere-at/shadler-winui), however it *will* only support Windows 10 and above. If someone wants to continue the PowerShell port, please do.
 
 ## To-do list
 - [x] Core functionality (e.g streaming and downloding)
