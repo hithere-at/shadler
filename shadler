@@ -2,6 +2,7 @@
 
 # Assuming that the structure of URL patterns list never change
 # Yt-SD will allways be above Yt-HD
+# who cares. they're encrypted now
 
 # Global variables documentation:
 # $query_url: A variable containing URL for getting API query results
@@ -197,11 +198,11 @@ base_prompt() {
 play_video() {
 
 	case "$PLAYER" in
-		mpv) nohup mpv --force-media-title="$1" "$2" > /dev/null 2>&1 &;;
-		vlc) nohup vlc --play-and-exit --meta-title="$1" "$2" > /dev/null 2>&1 &;;
-		android_mpv) nohup am start --user 0 -a android.intent.action.VIEW -n is.xyz.mpv/.MPVActivity -d "$2" > /dev/null 2>&1 &;;
-		android_vlc) nohup am start --user 0 -a android.intent.action.VIEW -n org.videolan.vlc/org.videolan.vlc.gui.video.VideoPlayerActivity -d "$2" -e 'title' "$1" > /dev/null 2>&1 &;;
-		nextplayer) nohup am start --user 0 -a android.intent.action.VIEW -n dev.anilbeesetti.nextplayer/dev.anilbeesetti.nextplayer.feature.player.PlayerActivity -d "$2" > /dev/null 2>&1 &;;
+		"mpv") nohup mpv --force-media-title="$1" "$2" > /dev/null 2>&1 &;;
+		"vlc") nohup vlc --play-and-exit --meta-title="$1" "$2" > /dev/null 2>&1 &;;
+		"android_mpv") nohup am start --user 0 -a android.intent.action.VIEW -n is.xyz.mpv/.MPVActivity -d "$2" > /dev/null 2>&1 &;;
+		"android_vlc") nohup am start --user 0 -a android.intent.action.VIEW -n org.videolan.vlc/org.videolan.vlc.gui.video.VideoPlayerActivity -d "$2" -e 'title' "$1" > /dev/null 2>&1 &;;
+		"nextplayer") nohup am start --user 0 -a android.intent.action.VIEW -n dev.anilbeesetti.nextplayer/dev.anilbeesetti.nextplayer.feature.player.PlayerActivity -d "$2" > /dev/null 2>&1 &;;
 
 	esac
 
@@ -379,7 +380,7 @@ anime_handler() {
 
 			case "$PLATFORM" in
 				"Android") video_url=$(echo "$video_links" | sed "${counter}q;d"); play_video "$anime_name" "$video_url";;
-				"GNU/Linux") video_url=$(echo -e $video_links | sed "${counter}q;d"); play_video "$anime_name" "$video_url";;
+				"GNU/Linux") video_url=$(echo -e "$video_links" | sed "${counter}q;d"); play_video "$anime_name" "$video_url";;
 				*) printf "${YELLOW}Unknown platform. Writing video links to stderr${RESET}\n\n"; echo "${GREEN}$video_links${$RESET}" >&2; break;;
 
 			esac
