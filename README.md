@@ -16,8 +16,9 @@ A shell script to stream and download anime from AllAnime
 Using Termux requires you to have either [mpv-android](https://github.com/mpv-android/mpv-android), [NextPlayer](https://github.com/anilbeesetti/nextplayer), or [VLC](https://github.com/videolan/vlc-android) installed on your phone.
 
 ```sh
-curl -o shadler 'https://raw.githubusercontent.com/hithere-at/shadler/master/shadler'
-cp shadler $PREFIX/bin
+curl -o shadler 'https://raw.githubusercontent.com/hithere-at/shadler/master/shadler
+chmod +x shadler
+mv shadler $PREFIX/bin
 ```
 
 ### GNU/Linux
@@ -27,14 +28,16 @@ VLC is supported but you have to install VLC using your package manager.
 ```sh
 curl -o shadler 'https://raw.githubusercontent.com/hithere-at/shadler/master/shadler'
 sudo apt install -y mpv
-sudo cp shadler /usr/local/bin
+chmod +x shadler
+sudo mv shadler /usr/local/bin
 ```
 
 ##### Arch linux
 ```sh
 curl -o shadler 'https://raw.githubusercontent.com/hithere-at/shadler/master/shadler'
 sudo pacman -S mpv
-sudo cp shadler /usr/local/bin
+chmod +x shadler
+sudo mv shadler /usr/local/bin
 ```
 
 ## Supported platform
