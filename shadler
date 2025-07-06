@@ -338,19 +338,19 @@ anime_handler() {
 
 	ep_detail_url=$(get_detail_url "$show_id" "$ANIME_DETAIL_HASH")
 	api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" -H 'Referer: https://allanime.to/' "$ep_detail_url")
-	good_idx=$(echo "$api_resp" | grep -o 'sub":\[.*"1"\]' | grep -o '"[^,\[]*"' | sed 's/"//g' | sed "/dub/q" | head -n -1 | tac)
+    good_idx=$(echo "$api_resp" | grep -o 'sub":\[[^\[]*' | grep -o '"[^,\[]*"' | sed 's/"//g' | head -n -1 | tac)
 
 	anime_dl_dir="$DATA_DIR/anime/$anime_name"
 
 	while [ $ep_idx -le $stop ]; do
 
 		ep_str=$(printf "$good_idx\n" | sed "${ep_idx}q;d")
-		stream_url=$(get_streams_url "anime" "$show_id" "$ep_str")
-		api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" -H 'Referer: https://allanime.to/' "$stream_url")
+        stream_url=$(get_streams_url "anime" "$show_id" "$ep_str")
+        api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" -H 'Referer: https://allanime.to/' "$stream_url")
 
 		# Use the echo command to avoid printf invalid directive
 		hls_source=$(echo "$api_resp" | grep -o 'apivtwo/[^"]*')
-		hls_source=$(printf "$hls_source" | sed -e "s/clock/clock.json/" -e 's/\/download//')
+    	hls_source=$(printf "$hls_source" | sed -e "s/clock/clock.json/" -e 's/\/download//')
 		api_resp=$(curl -s "https://allanime.pro/${hls_source}")
 		video_url=$(echo "$api_resp" | grep -o 'https://[^"]*' | head -n 1)
 
