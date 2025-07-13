@@ -195,6 +195,7 @@ play_video() {
 		"mpv") nohup mpv --force-media-title="$1" "$2" > /dev/null 2>&1 &;;
 		"vlc") nohup vlc --play-and-exit --meta-title="$1" "$2" > /dev/null 2>&1 &;;
 		"android_mpv") nohup am start --user 0 -a android.intent.action.VIEW -n is.xyz.mpv/.MPVActivity -d "$2" > /dev/null 2>&1 &;;
+        "android_mpvkt") nohup am start --user 0 -a android.intent.action.VIEW -n live.mehiz.mpvkt/.ui.player.PlayerActivity -d "$2" > /dev/null 2>&1 &;;
 		"android_vlc") nohup am start --user 0 -a android.intent.action.VIEW -n org.videolan.vlc/org.videolan.vlc.gui.video.VideoPlayerActivity -d "$2" -e 'title' "$1" > /dev/null 2>&1 &;;
 		"nextplayer") nohup am start --user 0 -a android.intent.action.VIEW -n dev.anilbeesetti.nextplayer/dev.anilbeesetti.nextplayer.feature.player.PlayerActivity -d "$2" > /dev/null 2>&1 &;;
 
@@ -212,7 +213,8 @@ preparse_handler() {
 		case "$1" in
 			-q | --query) shift; query_url=$(get_query_url "$1" "$type");;
 			-v | --vlc) [ "$PLATFORM" = "GNU/Linux" ] && PLAYER="vlc" || PLAYER="android_vlc";;
-			-n | --nextplay) [ "$PLATFORM" = "Android" ] && PLAYER="nextplayer" || PLAYER="mpv";;
+			-n | --nextplayer) [ "$PLATFORM" = "Android" ] && PLAYER="nextplayer" || PLAYER="mpv";;
+            -k | --mpvkt) [ "$PLATFORM" = "Android" ] && PLAYER="android_mpvkt" || PLAYER="mpv";;
 			-s | --stream) action=1;;
 			-d | --download) action=2;;
 			-r | --range)
@@ -257,7 +259,8 @@ Options:
 
     -q | --query <keywords>         Search anime or manga with specified keywords. Please quote the keywords
     -v | --vlc                      Stream using VLC media player
-    -n | --nextplay                 Stream using NextPlayer. Available only on Android
+    -n | --nextplayer               Stream using NextPlayer. Available only on Android
+    -k | --mpvkt                    Stream using mpvKt. Available only on Android
     -s | --stream                   Stream anime episode or read manga chapters with online
     -d | --download                 Download anime episode or download manga chapters for offline reading
     -r | --range <lower> <upper>    Specify episode/chapter range
