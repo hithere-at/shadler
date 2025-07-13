@@ -65,10 +65,52 @@ fn shadler_anime() {
     let detail_url = &query_contents_vec[selected-1].detail_url;
     let detail_response = utils::helper::shadler_get_api_response(&detail_url);
 
-    println!("{}", detail_response);
-    return;
+    let available_episodes = utils::helper::shadler_get_available_episodes("show", &detail_response);
+    let available_episodes_len = available_episodes.len();
 
-    let detail_contents = utils::helper::shadler_get_available_episodes("show", &detail_response);
+    let mut episode_range;
+    loop {
+
+        episode_range = utils::helper::shadler_range_input(&format!("Select episode [1-{}]: ", available_episodes_len), 1, available_episodes_len as i32);
+
+        if let Err(e) = episode_range {
+            eprintln!("\n{}{}{}\n", utils::constants::RED, e, utils::constants::RESET);
+            continue;
+
+        } else {
+            break;
+
+        }
+
+    }
+
+    let mut selected_episode = episode_range.unwrap();
+
+    // very hacky way to handle a single range
+    if selected_episode.len() == 1 {
+        selected_episode.push(selected_episode[0]);
+    
+    }
+
+    let mut action;
+    loop {
+
+        action = utils::helper::shadler_range_input(&format!("Select action [1-2]: "), 1, 2);
+
+        if let Err(e) = action {
+            eprintln!("\n{}{}{}\n", utils::constants::RED, e, utils::constants::RESET);
+            continue;
+
+        } else {
+            break;
+
+        }
+
+    }
+
+    for x in selected_episode[0]..selected_episode[1] {
+
+    }
 
 }
 

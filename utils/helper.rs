@@ -23,25 +23,12 @@ pub fn shadler_range_input(prompt: &str, lower: i32, upper: i32) -> Result<Vec<i
     let mut input = String::new();
     io::stdout().flush().unwrap();
     io::stdin().read_line(&mut input).unwrap();
-
-    let mut ranges: Vec<i32> = Vec::new();
-    let ranges_str: Vec<&str> = input
+    
+    let ranges: Vec<i32> = input
         .trim()
         .split(" ")
+        .filter_map(|x| x.parse::<i32>().ok())
         .collect();
-
-    for x in &ranges_str {
-
-        let num = x.parse::<i32>();
-
-        if let Ok(val) = num {
-            ranges.push(val);
-
-        } else {
-            continue;
-
-        }
-    }
 
     if ranges.len() == 0 {
         return Err(format!("ERROR: Invalid input"))
@@ -179,7 +166,7 @@ pub fn shadler_get_available_episodes(content_type: &str, resp: &str) -> Vec<Str
     let result = response_json["data"][content_type]["availableEpisodesDetail"]["sub"].as_array().unwrap();
     let episodes: Vec<String> = result
         .into_iter()
-        .map(|x| x.as_str().to_owned().unwrap())
+        .map(|x| x.as_str().unwrap().to_owned())
         .collect();
 
     return episodes;
