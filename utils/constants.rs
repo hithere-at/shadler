@@ -1,3 +1,10 @@
+pub static RESET: &'static str = "\x1B[0m";
+pub static MAGENTA: &'static str = "\x1B[1;35m";
+pub static YELLOW: &'static str = "\x1B[1;33m";
+pub static GREEN: &'static str = "\x1B[1;32m";
+pub static RED: &'static str ="\x1B[1;31m";
+pub static BLUE: &'static str ="\x1B[1;34m";
+
 pub static ANIME_QUERY_VARS: &'static str = "{%22search%22:{%22query%22:%22#QUERY#%22,%22allowAdult%22:false,%22allowUnknown%22:false},%22limit%22:26,%22page%22:1,%22translationType%22:%22sub%22,%22countryOrigin%22:%22ALL%22}";
 pub static ANIME_STREAM_VARS: &'static str = "{%22showId%22:%22#ANIME_ID#%22,%22translationType%22:%22sub%22,%22episodeString%22:%22#EPISODE#%22}";
 pub static ANIME_QUERY_HASH: &'static str = "06327bc10dd682e1ee7e07b6db9c16e9ad2fd56c1b769e47513128cd5c9fc77a";

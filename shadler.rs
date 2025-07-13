@@ -1,14 +1,4 @@
-use std::io;
-use std::io::Write;
-
 mod utils;
-
-static RESET: &'static str = "\x1B[0m";
-static MAGENTA: &'static str = "\x1B[1;35m";
-static YELLOW: &'static str = "\x1B[1;33m";
-static GREEN: &'static str = "\x1B[1;32m";
-static RED: &'static str ="\x1B[1;31m";
-static BLUE: &'static str ="\x1B[1;34m";
 
 fn shadler_help() {
     let help = "
@@ -31,29 +21,54 @@ Options:
 }
 
 fn shadler_anime() {
-    print!("{}Query:{} ", MAGENTA, RESET);
-    
-    let mut input = String::new();
-    io::stdout().flush().unwrap(); // flush because stdout flush on newlines and we dont want that
-    io::stdin().read_line(&mut input).unwrap();
-    let query = input.trim();
 
-    let query_url = utils::helper::shadler_get_query_url("shows", query);
+    let query = utils::helper::shadler_string_input("Query: ");
+    let query_url = utils::helper::shadler_get_query_url("shows", &query);
     let query_response = utils::helper::shadler_get_api_response(&query_url);
 
-    let query_contents = utils::helper::shadler_get_query_object("shows", &query_response);
+    let query_contents_wrap = utils::helper::shadler_get_query_object("shows", &query_response);
 
-    if let Err(e) = query_contents {
-        eprintln!("\n{}{}{}", RED, e, RESET);
+    if let Err(e) = query_contents_wrap {
+        eprintln!("\n{}{}{}", utils::constants::RED, e, utils::constants::RESET);
         return;
 
     }
 
+    let query_contents_vec = query_contents_wrap.unwrap();
+    let mut query_contents_len = 0;
+
     print!("\n");
-    for (x, val) in query_contents.unwrap().iter().enumerate() {
-        println!("{}[{}] {} {} {} ", MAGENTA, x+1, BLUE, val.title, RESET);
+    for x in &query_contents_vec {
+        query_contents_len += 1;
+        println!("{}[{}] {} {} {} ", utils::constants::MAGENTA, query_contents_len, utils::constants::BLUE, x.title, utils::constants::RESET);
 
     }
+
+    let mut range;
+    loop {
+
+        range = utils::helper::shadler_range_input(&format!("Select anime [1-{}]: ", query_contents_len), 1, query_contents_len);
+
+        if let Err(e) = range {
+            eprintln!("\n{}{}{}\n", utils::constants::RED, e, utils::constants::RESET);
+            continue;
+
+        } else {
+            break;
+
+        }
+
+    }
+
+    let selected = range.unwrap()[0] as usize;
+    let selected_id = &query_contents_vec[selected-1].id;
+    let detail_url = &query_contents_vec[selected-1].detail_url;
+    let detail_response = utils::helper::shadler_get_api_response(&detail_url);
+
+    println!("{}", detail_response);
+    return;
+
+    let detail_contents = utils::helper::shadler_get_available_episodes("show", &detail_response);
 
 }
 

@@ -1,8 +1,74 @@
-use reqwest::header::{USER_AGENT, REFERER};
+use std::io;
+use std::io::Write;
 use serde_json::Value; 
 
 use super::constants;
 use super::structs;
+
+pub fn shadler_string_input(prompt: &str) -> String {
+
+    print!("{}{}{}", constants::MAGENTA, prompt, constants::RESET);
+
+    let mut input = String::new();
+    io::stdout().flush().unwrap(); // flush manually because stdout flush on newlines and we dont want that
+    io::stdin().read_line(&mut input).unwrap();
+
+    return input.trim().to_owned();
+
+}
+
+pub fn shadler_range_input(prompt: &str, lower: i32, upper: i32) -> Result<Vec<i32>, String> {
+    print!("{}{}{}", constants::MAGENTA, prompt, constants::RESET);
+
+    let mut input = String::new();
+    io::stdout().flush().unwrap();
+    io::stdin().read_line(&mut input).unwrap();
+
+    let mut ranges: Vec<i32> = Vec::new();
+    let ranges_str: Vec<&str> = input
+        .trim()
+        .split(" ")
+        .collect();
+
+    for x in &ranges_str {
+
+        let num = x.parse::<i32>();
+
+        if let Ok(val) = num {
+            ranges.push(val);
+
+        } else {
+            continue;
+
+        }
+    }
+
+    if ranges.len() == 0 {
+        return Err(format!("ERROR: Invalid input"))
+
+    } else if ranges.len() == 1 {
+
+        if ranges[0] < lower || ranges[0] > upper {
+            return Err(format!("ERROR: Invalid range"));
+
+        } else {
+            return Ok(ranges);
+
+        }
+
+    } else {
+
+        if ranges[0] < lower || ranges[1] > upper || ranges[0] > ranges[1] || ranges[1] < ranges[0] {
+            return Err(format!("ERROR: Invalid range"));
+
+        } else {
+            return Ok(ranges);
+
+        }
+
+    }
+
+}
 
 pub fn shadler_get_query_url(query_type: &str, query: &str) -> String {
 
@@ -51,18 +117,20 @@ pub fn shadler_get_detail_url(detail_type: &str, id: &str) -> String {
 
 }
 
-pub fn shadler_get_api_response(uri: &String) -> String {
+pub fn shadler_get_api_response(uri: &str) -> String {
 
-    let request = reqwest::blocking::Client::new();
-    let response = request.get(uri)
-        .header(USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0")
-        .header(REFERER, "https://allmanga.to")
-        .send()
+    let mut response = ureq::get(uri)
+        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0")
+        .header("Referer", "https://allmanga.to")
+        .call()
         .unwrap();
 
     if response.status().is_success() {
 
-        let body = response.text().unwrap();
+        let body = response
+            .body_mut()
+            .read_to_string()
+            .unwrap();
 
         if body.contains("PERSISTED_QUERY_NOT_FOUND") {
             return String::from("CRITICAL: Hash expired")
@@ -79,7 +147,7 @@ pub fn shadler_get_api_response(uri: &String) -> String {
 
 }
 
-pub fn shadler_get_query_object(content_type: &str, resp: &String) -> Result<Vec<structs::QueryContent>, String> {
+pub fn shadler_get_query_object(content_type: &str, resp: &str) -> Result<Vec<structs::QueryContent>, String> {
 
     let response_json: Value = serde_json::from_str(resp).unwrap();
     let results = response_json["data"][content_type]["edges"].as_array().unwrap();
@@ -102,5 +170,18 @@ pub fn shadler_get_query_object(content_type: &str, resp: &String) -> Result<Vec
     }
 
     return Ok(contents);
+
+}
+
+pub fn shadler_get_available_episodes(content_type: &str, resp: &str) -> Vec<String> {
+
+    let response_json: Value = serde_json::from_str(resp).unwrap();
+    let result = response_json["data"][content_type]["availableEpisodesDetail"]["sub"].as_array().unwrap();
+    let episodes: Vec<String> = result
+        .into_iter()
+        .map(|x| x.as_str().to_owned().unwrap())
+        .collect();
+
+    return episodes;
 
 }
