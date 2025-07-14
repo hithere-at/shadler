@@ -1,4 +1,5 @@
 use std::io;
+use std::process::{Command, Stdio};
 use std::io::Write;
 use serde_json::Value; 
 
@@ -64,19 +65,19 @@ pub fn shadler_get_query_url(query_type: &str, query: &str) -> String {
     let mut ext_var = String::new();
 
     if query_type == "shows" {
-        query_var = constants::ANIME_QUERY_VARS.replace("#QUERY#", good_query.as_str());
+        query_var = constants::ANIME_QUERY_VARS.replace("#QUERY#", &good_query);
         ext_var = constants::API_EXT.replace("#HASH#", constants::ANIME_QUERY_HASH);
 
     } else if query_type == "mangas" {
-        query_var = constants::MANGA_QUERY_VARS.replace("#QUERY#", good_query.as_str());
+        query_var = constants::MANGA_QUERY_VARS.replace("#QUERY#", &good_query);
         ext_var = constants::API_EXT.replace("#HASH#", constants::MANGA_QUERY_HASH);
 
     }
 
     let mut query_url = String::from("https://api.allanime.day/api?variables=");
-    query_url.push_str(query_var.as_str());
+    query_url.push_str(&query_var);
     query_url.push_str("&extensions=");
-    query_url.push_str(ext_var.as_str());
+    query_url.push_str(&ext_var);
 
     return query_url;
 
@@ -85,7 +86,7 @@ pub fn shadler_get_query_url(query_type: &str, query: &str) -> String {
 pub fn shadler_get_detail_url(detail_type: &str, id: &str) -> String {
 
     let mut ext_var = String::new();
-    let query_var = constants::DETAIL_VARS.replace("#ID#", id);
+    let detail_var = constants::DETAIL_VARS.replace("#ID#", id);
 
     if detail_type == "shows" {
         ext_var = constants::API_EXT.replace("#HASH#", constants::ANIME_DETAIL_HASH);
@@ -95,12 +96,36 @@ pub fn shadler_get_detail_url(detail_type: &str, id: &str) -> String {
 
     }
 
-    let mut query_url = String::from("https://api.allanime.day/api?variables=");
-    query_url.push_str(query_var.as_str());
-    query_url.push_str("&extensions=");
-    query_url.push_str(ext_var.as_str());
+    let mut detail_url = String::from("https://api.allanime.day/api?variables=");
+    detail_url.push_str(&detail_var);
+    detail_url.push_str("&extensions=");
+    detail_url.push_str(&ext_var);
 
-    return query_url;
+    return detail_url;
+
+}
+
+pub fn shadler_get_stream_url(detail_type: &str, id: &str, episode: &str) -> String {
+
+    let mut ext_var = String::new();
+    let mut stream_var = String::new(); 
+
+    if detail_type == "shows" {
+        stream_var = constants::ANIME_STREAM_VARS.replace("#ANIME_ID#", id).replace("#EPISODE#", episode);
+        ext_var = constants::API_EXT.replace("#HASH#", constants::ANIME_STREAM_HASH);
+
+    } else if detail_type == "mangas" {
+        stream_var = constants::MANGA_READ_VARS.replace("#MANGA_ID#", id).replace("#CHAPTER#", episode);
+        ext_var = constants::API_EXT.replace("#HASH#", constants::MANGA_READ_HASH);
+
+    }
+
+    let mut stream_url = String::from("https://api.allanime.day/api?variables=");
+    stream_url.push_str(&stream_var);
+    stream_url.push_str("&extensions=");
+    stream_url.push_str(&ext_var);
+
+    return stream_url;
 
 }
 
@@ -162,13 +187,39 @@ pub fn shadler_get_query_object(content_type: &str, resp: &str) -> Result<Vec<st
 
 pub fn shadler_get_available_episodes(content_type: &str, resp: &str) -> Vec<String> {
 
+    // another stupid hack because the key is called "show" / "manga", not "shows" / "mangas"
+    let mut key = String::from(content_type);
+    key.pop();
+
     let response_json: Value = serde_json::from_str(resp).unwrap();
-    let result = response_json["data"][content_type]["availableEpisodesDetail"]["sub"].as_array().unwrap();
+    let result = response_json["data"][&key]["availableEpisodesDetail"]["sub"].as_array().unwrap();
     let episodes: Vec<String> = result
         .into_iter()
         .map(|x| x.as_str().unwrap().to_owned())
         .collect();
 
     return episodes;
+
+}
+
+pub fn shadler_stream_video(platform: &str, title: &str, link: &str) {
+
+    if platform == "linux" {
+    Command::new("mpv")
+        .args([format!("--force-media-title={title}"), format!("{link}")])
+        .stdout(Stdio::null())
+        .stdin(Stdio::null())
+        .spawn()
+        .unwrap();
+
+    } else if platform == "android" {
+    Command::new("am")
+        .args(["start", "--user", "0", "-a", "android.intent.action.VIEW", "-n", "live.mehiz.mpvkt/.ui.player.PlayerActivity", "-d", link])
+        .stdout(Stdio::null())
+        .stdin(Stdio::null())
+        .spawn()
+        .unwrap();
+
+    }
 
 }
