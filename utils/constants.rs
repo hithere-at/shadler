@@ -19,3 +19,21 @@ pub static MANGA_READ_HASH: &'static str = "121996b57011b69386b65ca8fc9e202046fc
 
 pub static DETAIL_VARS: &'static str = "{%22_id%22:%22#ID#%22}";
 pub static API_EXT: &'static str = "{%22persistedQuery%22:{%22version%22:1,%22sha256Hash%22:%22#HASH#%22}}";
+
+pub static MANGA_READER_BASE: &'static str = "
+!<DOCTYPE html>
+<html>  
+
+    <head>
+        <title>#TITLE#</title>
+        <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+        <style type='text/css'>body {{ background-color: #3B3A39; }}</style>
+    </head> 
+
+    <body>
+        #IMG_TAGS#
+    </body> 
+ 
+</html>
+ 
+";

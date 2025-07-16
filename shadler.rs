@@ -1,4 +1,7 @@
 use std::process::exit;
+use std::fs;
+use std::io::prelude::*;
+use std::path::Path;
 use regex::Regex;
 use serde_json::Value;
 use utils::constants::{MAGENTA, BLUE, RED, RESET, YELLOW, GREEN};
@@ -28,12 +31,14 @@ Options:
 
 fn shadler_prep(content_type: &str) -> (i32, utils::structs::StreamContent) {
 
+    let content_type_string = if content_type == "shows" { "anime" } else { "manga" };
+    let content_part_string = if content_type == "shows" { "episodes" } else { "chapters" };
+
     let query = utils::helper::shadler_string_input("Query: ");
     let query_url = utils::helper::shadler_get_query_url(content_type, &query);
     let query_response = utils::helper::shadler_get_api_response(&query_url);
 
     let query_contents_wrap = utils::helper::shadler_get_query_object(content_type, &query_response);
-
 
     if let Err(e) = query_contents_wrap {
         eprintln!("\n{}{}{}", RED, e, RESET);
@@ -51,23 +56,9 @@ fn shadler_prep(content_type: &str) -> (i32, utils::structs::StreamContent) {
 
     }
 
-    let mut range;
-    loop {
+    let range = utils::helper::shadler_range_input(&format!("Select {} [1-{}]: ", content_type_string, query_contents_len), 1, query_contents_len);
 
-        range = utils::helper::shadler_range_input(&format!("Select anime [1-{}]: ", query_contents_len), 1, query_contents_len);
-
-        if let Err(e) = range {
-            eprintln!("\n{}{}{}\n", RED, e, RESET);
-            continue;
-
-        } else {
-            break;
-
-        }
-
-    }
-
-    let selected = range.unwrap()[0] as usize;
+    let selected = range[0] as usize;
     let selected_id = &query_contents_vec[selected-1].id;
     let selected_title = &query_contents_vec[selected-1].title;
 
@@ -77,25 +68,9 @@ fn shadler_prep(content_type: &str) -> (i32, utils::structs::StreamContent) {
     let available_episodes = utils::helper::shadler_get_available_episodes(content_type, &detail_response);
     let available_episodes_len = available_episodes.len();
 
-    let mut episode_range;
-    loop {
+    let mut selected_episodes = utils::helper::shadler_range_input(&format!("Select {} [1-{}]: ", content_part_string, available_episodes_len), 1, available_episodes_len as i32);
 
-        episode_range = utils::helper::shadler_range_input(&format!("Select episode [1-{}]: ", available_episodes_len), 1, available_episodes_len as i32);
-
-        if let Err(e) = episode_range {
-            eprintln!("\n{}{}{}\n", RED, e, RESET);
-            continue;
-
-        } else {
-            break;
-
-        }
-
-    }
-
-    let mut selected_episodes = episode_range.unwrap();
-
-    // very hacky way to handle a single range input (this will be fed to a for loop)
+    // very hacky way to handle a single range episode input (this will be fed to a for loop)
     if selected_episodes.len() == 1 {
         selected_episodes.push(selected_episodes[0]);
     
@@ -103,21 +78,7 @@ fn shadler_prep(content_type: &str) -> (i32, utils::structs::StreamContent) {
 
     println!("\n{}[1] {}Stream\n{}[2] {}Download{}", MAGENTA, BLUE, MAGENTA, BLUE, RESET);
 
-    let mut action;
-    loop {
-
-        action = utils::helper::shadler_range_input(&format!("Select action [1-2]: "), 1, 2);
-
-        if let Err(e) = action {
-            eprintln!("\n{}{}{}\n", RED, e, RESET);
-            continue;
-
-        } else {
-            break;
-
-        }
-
-    }
+    let action = utils::helper::shadler_range_input(&format!("Select action [1-2]: "), 1, 2);
 
     let stream_content = utils::structs::StreamContent {
         id: selected_id.clone(),
@@ -127,14 +88,14 @@ fn shadler_prep(content_type: &str) -> (i32, utils::structs::StreamContent) {
 
     };
 
-    let stream_info = (action.unwrap()[0], stream_content);
+    let stream_info = (action[0], stream_content);
     return stream_info;
 
 }
 
 fn shadler_anime(info: (i32, utils::structs::StreamContent)) {
 
-    let action = info.0;
+    let _action = info.0;
     let stream_content  = info.1;
 
     let selected_id = &stream_content.id;
@@ -176,22 +137,8 @@ fn shadler_anime(info: (i32, utils::structs::StreamContent)) {
         if x < selected_episode[1] {
             println!("\n{}[1] {}Next episode\n{}[2] {}Quit{}", MAGENTA, BLUE, MAGENTA, BLUE, RESET);
 
-            let mut next_action;
-            loop {
-
-                next_action = utils::helper::shadler_range_input("Select action [1-2]: ", 1, 2);
-
-                if let Err(e) = next_action {
-                    eprintln!("{}{}{}", RED, e, RESET);
-
-                } else {
-                    break;
-
-                }
-
-            }
-
-            let selected_action = next_action.unwrap()[0];
+            let next_action = utils::helper::shadler_range_input("Select action [1-2]: ", 1, 2);
+            let selected_action = next_action[0]; // ignore range input
             
             // quit application
             if selected_action == 2 {
@@ -202,6 +149,72 @@ fn shadler_anime(info: (i32, utils::structs::StreamContent)) {
         }
 
     }
+
+}
+
+fn shadler_manga(info: (i32, utils::structs::StreamContent)) {
+
+    let _action = info.0;
+    let stream_content  = info.1;
+
+    let selected_id = stream_content.id;
+    let selected_turtle = stream_content.title;
+    let chapter_start = stream_content.selected[0];
+    let chapter_end = stream_content.selected[1];
+    let mut available_chapters_rev = stream_content.available;
+
+    available_chapters_rev.reverse();
+
+    let home_buf = std::env::home_dir().unwrap();
+    let home_dir = home_buf.to_str().unwrap();
+
+    let mut manga_data_dir = String::from(home_dir);
+    manga_data_dir.push_str("/.local/share/shadler/manga/");
+    manga_data_dir.push_str(&selected_turtle);
+
+    let mut chapters_file_dir = String::from(&manga_data_dir);
+    chapters_file_dir.push_str(&format!("/{chapter_start}-{chapter_end}.html"));
+
+    let manga_data_path = Path::new(&manga_data_dir);
+    let chapters_file_path = Path::new(&chapters_file_dir);
+
+    if manga_data_path.exists() == false {
+        fs::create_dir_all(manga_data_dir).unwrap();
+
+    }
+
+    let mut chapters_file = fs::File::create(chapters_file_path).unwrap();
+    let mut page_collection = String::new();
+
+    for x in chapter_start..chapter_end+1 {
+
+        println!("\n{}Loading chapter {}..{}", YELLOW, x, RESET);
+
+        let current_selected = (x-1) as usize;
+        let stream_url = utils::helper::shadler_get_stream_url("mangas", &selected_id, &available_chapters_rev[current_selected]);
+        let stream_response = utils::helper::shadler_get_api_response(&stream_url);
+
+        let page_source: Value = serde_json::from_str(&stream_response).unwrap();
+        let page_url_head = page_source["data"]["chapterPages"]["edges"][0]["pictureUrlHead"].as_str().unwrap();
+        let chapter_pages = page_source["data"]["chapterPages"]["edges"][0]["pictureUrls"].as_array().unwrap();
+
+        for current_page in chapter_pages {
+            let page_path = current_page["url"].as_str().unwrap();
+            let page_url = page_url_head.to_owned() + page_path;
+
+            let page_img_tag = format!("<img src='{page_url}' alt='Failed to load image'>\n");
+            page_collection.push_str(&page_img_tag);
+
+        }
+
+    }
+
+    let reader_base = String::from(utils::constants::MANGA_READER_BASE);
+    let reader = reader_base.replace("#TITLE#", &selected_turtle).replace("#IMG_TAGS#", &page_collection);
+
+    chapters_file.write_all(reader.as_bytes()).unwrap();
+
+    println!("\n{}HTML file generated. Start reading by running xdg-open '{}'{}", GREEN, chapters_file_path.to_str().unwrap(), RESET);
 
 }
 
@@ -218,9 +231,13 @@ fn main() {
 
         } else if subcommand == "manga" {
             let streaming_info = shadler_prep("mangas");
+            shadler_manga(streaming_info);
+
+        } else if subcommand == "help" {
+            shadler_help();
 
         } else { 
-            println!("Unkown subcommand!");
+            println!("{}ERROR: Unknown subcommand. Available subcommand is 'anime' and 'manga', and 'help'{}", RED, RESET);
 
         }
 

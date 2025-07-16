@@ -18,39 +18,47 @@ pub fn shadler_string_input(prompt: &str) -> String {
 
 }
 
-pub fn shadler_range_input(prompt: &str, lower: i32, upper: i32) -> Result<Vec<i32>, String> {
-    print!("{}{}{}", constants::MAGENTA, prompt, constants::RESET);
+pub fn shadler_range_input(prompt: &str, lower: i32, upper: i32) -> Vec<i32> {
 
-    let mut input = String::new();
-    io::stdout().flush().unwrap();
-    io::stdin().read_line(&mut input).unwrap();
-    
-    let ranges: Vec<i32> = input
-        .trim()
-        .split(" ")
-        .filter_map(|x| x.parse::<i32>().ok())
-        .collect();
+    loop {
 
-    if ranges.len() == 0 {
-        return Err(format!("ERROR: Invalid input"))
+        print!("{}{}{}", constants::MAGENTA, prompt, constants::RESET);
 
-    } else if ranges.len() == 1 {
+        let mut input = String::new();
+        io::stdout().flush().unwrap();
+        io::stdin().read_line(&mut input).unwrap();
+        
+        let ranges: Vec<i32> = input
+            .trim()
+            .split(" ")
+            .filter_map(|x| x.parse::<i32>().ok())
+            .collect();
 
-        if ranges[0] < lower || ranges[0] > upper {
-            return Err(format!("ERROR: Invalid range"));
+        if ranges.len() == 0 {
+            eprintln!("{}ERROR: Invalid input{}\n", constants::RED, constants::RESET);
+            continue;
+
+        } else if ranges.len() == 1 {
+
+            if ranges[0] < lower || ranges[0] > upper {
+                eprintln!("{}ERROR: Invalid range{}\n", constants::RED, constants::RESET);
+                continue;
+
+            } else {
+                return ranges;
+
+            }
 
         } else {
-            return Ok(ranges);
 
-        }
+            if ranges[0] < lower || ranges[1] > upper || ranges[0] > ranges[1] || ranges[1] < ranges[0] {
+                eprintln!("{}ERROR: Invalid range{}\n", constants::RED, constants::RESET);
+                continue;
 
-    } else {
+            } else {
+                return ranges;
 
-        if ranges[0] < lower || ranges[1] > upper || ranges[0] > ranges[1] || ranges[1] < ranges[0] {
-            return Err(format!("ERROR: Invalid range"));
-
-        } else {
-            return Ok(ranges);
+            }
 
         }
 
@@ -188,11 +196,13 @@ pub fn shadler_get_query_object(content_type: &str, resp: &str) -> Result<Vec<st
 pub fn shadler_get_available_episodes(content_type: &str, resp: &str) -> Vec<String> {
 
     // another stupid hack because the key is called "show" / "manga", not "shows" / "mangas"
-    let mut key = String::from(content_type);
-    key.pop();
+    let mut key_type = String::from(content_type);
+    key_type.pop();
+
+    let episodes_key = if content_type == "shows" { "availableEpisodesDetail" } else { "availableChaptersDetail" };
 
     let response_json: Value = serde_json::from_str(resp).unwrap();
-    let result = response_json["data"][&key]["availableEpisodesDetail"]["sub"].as_array().unwrap();
+    let result = response_json["data"][&key_type][episodes_key]["sub"].as_array().unwrap();
     let episodes: Vec<String> = result
         .into_iter()
         .map(|x| x.as_str().unwrap().to_owned())
