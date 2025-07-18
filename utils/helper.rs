@@ -1,10 +1,12 @@
 use std::io;
 use std::process::{Command, Stdio};
 use std::io::Write;
-use serde_json::Value; 
+use std::fs;
+use std::path::Path;
+use serde_json::Value;
 
 use super::constants;
-use super::structs;
+use super::api;
 
 pub fn shadler_string_input(prompt: &str) -> String {
 
@@ -66,104 +68,31 @@ pub fn shadler_range_input(prompt: &str, lower: i32, upper: i32) -> Vec<i32> {
 
 }
 
-pub fn shadler_get_query_url(query_type: &str, query: &str) -> String {
+pub fn shadler_create_file(content_type: &str, title: &str, file_name: &str) -> (fs::File, String) {
 
-    let good_query = query.replace(" ", "%20");
-    let mut query_var = String::new();
-    let mut ext_var = String::new();
+    let content_string = if content_type == "shows" { "anime" } else { "manga" };
 
-    if query_type == "shows" {
-        query_var = constants::ANIME_QUERY_VARS.replace("#QUERY#", &good_query);
-        ext_var = constants::API_EXT.replace("#HASH#", constants::ANIME_QUERY_HASH);
+    let home_buf = std::env::home_dir().unwrap();
+    let home_dir = home_buf.to_str().unwrap();
 
-    } else if query_type == "mangas" {
-        query_var = constants::MANGA_QUERY_VARS.replace("#QUERY#", &good_query);
-        ext_var = constants::API_EXT.replace("#HASH#", constants::MANGA_QUERY_HASH);
+    let mut content_data_dir = String::from(home_dir);
+    content_data_dir.push_str(&format!("/.local/share/shadler/{content_string}/"));
+    content_data_dir.push_str(title);
 
-    }
+    let mut content_file_dir = String::from(&content_data_dir);
+    content_file_dir.push_str(&format!("/{file_name}"));
 
-    let mut query_url = String::from("https://api.allanime.day/api?variables=");
-    query_url.push_str(&query_var);
-    query_url.push_str("&extensions=");
-    query_url.push_str(&ext_var);
+    let content_data_path = Path::new(&content_data_dir);
+    let content_file_path = Path::new(&content_file_dir);
 
-    return query_url;
-
-}
-
-pub fn shadler_get_detail_url(detail_type: &str, id: &str) -> String {
-
-    let mut ext_var = String::new();
-    let detail_var = constants::DETAIL_VARS.replace("#ID#", id);
-
-    if detail_type == "shows" {
-        ext_var = constants::API_EXT.replace("#HASH#", constants::ANIME_DETAIL_HASH);
-
-    } else if detail_type == "mangas" {
-        ext_var = constants::API_EXT.replace("#HASH#", constants::MANGA_DETAIL_HASH);
+    if content_data_path.exists() == false {
+        fs::create_dir_all(content_data_dir).unwrap();
 
     }
 
-    let mut detail_url = String::from("https://api.allanime.day/api?variables=");
-    detail_url.push_str(&detail_var);
-    detail_url.push_str("&extensions=");
-    detail_url.push_str(&ext_var);
+    let content_file = fs::File::create(content_file_path).unwrap();
 
-    return detail_url;
-
-}
-
-pub fn shadler_get_stream_url(detail_type: &str, id: &str, episode: &str) -> String {
-
-    let mut ext_var = String::new();
-    let mut stream_var = String::new(); 
-
-    if detail_type == "shows" {
-        stream_var = constants::ANIME_STREAM_VARS.replace("#ANIME_ID#", id).replace("#EPISODE#", episode);
-        ext_var = constants::API_EXT.replace("#HASH#", constants::ANIME_STREAM_HASH);
-
-    } else if detail_type == "mangas" {
-        stream_var = constants::MANGA_READ_VARS.replace("#MANGA_ID#", id).replace("#CHAPTER#", episode);
-        ext_var = constants::API_EXT.replace("#HASH#", constants::MANGA_READ_HASH);
-
-    }
-
-    let mut stream_url = String::from("https://api.allanime.day/api?variables=");
-    stream_url.push_str(&stream_var);
-    stream_url.push_str("&extensions=");
-    stream_url.push_str(&ext_var);
-
-    return stream_url;
-
-}
-
-pub fn shadler_get_api_response(uri: &str) -> String {
-
-    let mut response = ureq::get(uri)
-        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0")
-        .header("Referer", "https://allmanga.to")
-        .call()
-        .unwrap();
-
-    if response.status().is_success() {
-
-        let body = response
-            .body_mut()
-            .read_to_string()
-            .unwrap();
-
-        if body.contains("PERSISTED_QUERY_NOT_FOUND") {
-            return String::from("CRITICAL: Hash expired")
-
-        } else {
-            return body;
-
-        }
-
-    } else {
-        return String::from("ERROR: Failed to make an API request, please try again.");
-
-    }
+    return (content_file, content_file_path.to_str().unwrap().to_owned());
 
 }
 
@@ -184,7 +113,7 @@ pub fn shadler_get_query_object(content_type: &str, resp: &str) -> Result<Vec<st
             structs::QueryContent {
                 id: x["_id"].as_str().unwrap().to_owned(),
                 title: x["name"].as_str().unwrap().to_owned(),
-                detail_url: shadler_get_detail_url(content_type, x["_id"].as_str().unwrap())
+                detail_url: api::shadler_get_detail_url(content_type, x["_id"].as_str().unwrap())
             }
         )
     }
