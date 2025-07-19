@@ -1,5 +1,4 @@
-use std::io::Write;
-use std::process::exit;
+use std::{process::exit, io::Write};
 use regex::Regex;
 use serde_json::Value;
 use utils::constants::{MAGENTA, BLUE, RED, RESET, YELLOW, GREEN};
@@ -132,7 +131,7 @@ fn shadler_anime(info: (i32, utils::structs::StreamContent)) {
 
         if action == 1 {
 
-            utils::helper::shadler_stream_video(std::env::consts::OS, &selected_turtle, &video_link);
+            utils::player::shadler_stream_video(std::env::consts::OS, &selected_turtle, &video_link);
 
             if x < selected_episode[1] {
                 println!("\n{}[1] {}Next episode\n{}[2] {}Quit{}", MAGENTA, BLUE, MAGENTA, BLUE, RESET);

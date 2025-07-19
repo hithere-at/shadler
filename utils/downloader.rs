@@ -1,5 +1,4 @@
-use std::io::Read;
-use std::io::Write;
+use std::io::{Read, Write};
 use super::helper::shadler_create_file;
 
 // i could have used threads to have faster download but its too complex for me. as the time of writing this, i just started learning rust a week ago
