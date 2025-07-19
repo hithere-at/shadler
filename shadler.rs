@@ -71,7 +71,7 @@ fn shadler_prep(content_type: &str) -> (i32, utils::structs::StreamContent) {
     // very hacky way to handle a single range episode input (this will be fed to a for loop)
     if selected_episodes.len() == 1 {
         selected_episodes.push(selected_episodes[0]);
-    
+
     }
 
     println!("\n{}[1] {}Stream\n{}[2] {}Download{}", MAGENTA, BLUE, MAGENTA, BLUE, RESET);
@@ -139,7 +139,7 @@ fn shadler_anime(info: (i32, utils::structs::StreamContent)) {
 
                 let next_action = utils::helper::shadler_range_input("Select action [1-2]: ", 1, 2);
                 let selected_action = next_action[0]; // ignore range input
-                
+
                 // quit application
                 if selected_action == 2 {
                     exit(0);
@@ -153,9 +153,9 @@ fn shadler_anime(info: (i32, utils::structs::StreamContent)) {
         } else if action == 2 {
 
             println!("\n{}Downloading Episode {}..{}", YELLOW, x, RESET);
-            let download_result = utils::downloader::shadler_download_anime(&video_link, &selected_turtle, &x.to_string());
+            let download_result = utils::downloader::shadler_download_file("shows", &video_link, &selected_turtle, &format!("Episode {x}.mp4"));
 
-            match download_result { 
+            match download_result {
                 Err(e) => eprintln!("\n{}{}{}", RED, e, RESET),
                 Ok(path) => println!("{}Episode {} downloaded at {}'{}'!{}", GREEN, x, YELLOW, path, RESET)
 
@@ -169,7 +169,7 @@ fn shadler_anime(info: (i32, utils::structs::StreamContent)) {
 
 fn shadler_manga(info: (i32, utils::structs::StreamContent)) {
 
-    let _action = info.0;
+    let action = info.0;
     let stream_content  = info.1;
 
     let selected_id = stream_content.id;
@@ -196,16 +196,31 @@ fn shadler_manga(info: (i32, utils::structs::StreamContent)) {
         let page_source: Value = serde_json::from_str(&stream_response).unwrap();
         let page_url_head = page_source["data"]["chapterPages"]["edges"][0]["pictureUrlHead"].as_str().unwrap();
         let chapter_pages = page_source["data"]["chapterPages"]["edges"][0]["pictureUrls"].as_array().unwrap();
+        let mut page_counter = 0;
 
         for current_page in chapter_pages {
             let page_path = current_page["url"].as_str().unwrap();
             let page_url = page_url_head.to_owned() + page_path;
 
-            let page_img_tag = format!("<img src='{page_url}' alt='Failed to load image'>\n");
-            page_collection.push_str(&page_img_tag);
+            if action == 1 {
+                let page_img_tag = format!("<img src='{page_url}' alt='Failed to load image'>\n");
+                page_collection.push_str(&page_img_tag);
 
+            } else if action == 2 {
+                page_counter += 1;
+                let download_result = utils::downloader::shadler_download_file("mangas", &page_url, &selected_turtle, &format!("chp{x}_{page_counter}"));
+
+                if let Err(e) = download_result {
+                    eprintln!("\n{}{}{}", RED, e, RESET);
+                    exit(1);
+
+                } else if let Ok(path) = download_result {
+                    let page_img_tag = format!("<img src='{path}' alt='Failed to load image'>\n");
+                    page_collection.push_str(&page_img_tag);
+
+                }
+            }
         }
-
     }
 
     let reader_base = String::from(utils::constants::MANGA_READER_BASE);
@@ -235,7 +250,7 @@ fn main() {
         } else if subcommand == "help" {
             shadler_help();
 
-        } else { 
+        } else {
             eprintln!("{}ERROR: Unknown subcommand. Available subcommand is 'anime' and 'manga', and 'help'{}", RED, RESET);
 
         }
@@ -246,4 +261,4 @@ fn main() {
     }
 
 }
-    
+

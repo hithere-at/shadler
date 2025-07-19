@@ -3,13 +3,13 @@ use std::io::Write;
 use super::helper::shadler_create_file;
 
 // i could have used threads to have faster download but its too complex for me. as the time of writing this, i just started learning rust a week ago
-pub fn shadler_download_anime(video_link: &str, title: &str, episode: &str) -> Result<String, String> {
+pub fn shadler_download_file(content_type: &str, content_link: &str, title: &str, filename: &str) -> Result<String, String> {
 
-    let episode_file_info = shadler_create_file("shows", title, &format!("Episode {episode}.mp4"));
+    let episode_file_info = shadler_create_file(content_type, title, filename);
     let episode_file_path = episode_file_info.1;
     let mut episode_file = episode_file_info.0;
 
-    let response = ureq::head(video_link)
+    let response = ureq::head(content_link)
         .call()
         .unwrap();
 
@@ -33,9 +33,7 @@ pub fn shadler_download_anime(video_link: &str, title: &str, episode: &str) -> R
 
         let next_chunk = downloaded_bytes + (10 * 1024 * 1024) - 1; // this variable is 0 based
 
-        println!("bytes={downloaded_bytes}-{next_chunk}");
-
-        let mut video_response = ureq::get(video_link)
+        let mut video_response = ureq::get(content_link)
         .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0")
         .header("Range", &format!("bytes={downloaded_bytes}-{next_chunk}"))
         .call()

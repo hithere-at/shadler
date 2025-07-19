@@ -22,18 +22,18 @@ pub static API_EXT: &'static str = "{%22persistedQuery%22:{%22version%22:1,%22sh
 
 pub static MANGA_READER_BASE: &'static str = "
 !<DOCTYPE html>
-<html>  
+<html>
 
     <head>
         <title>#TITLE#</title>
         <meta name='viewport' content='width=device-width, initial-scale=1.0'>
         <style type='text/css'>body {{ background-color: #3B3A39; }}</style>
-    </head> 
+    </head>
 
     <body>
         #IMG_TAGS#
-    </body> 
- 
+    </body>
+
 </html>
- 
+
 ";

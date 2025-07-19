@@ -6,6 +6,7 @@ use std::path::Path;
 use serde_json::Value;
 
 use super::constants;
+use super::structs;
 use super::api;
 
 pub fn shadler_string_input(prompt: &str) -> String {
