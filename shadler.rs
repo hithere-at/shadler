@@ -26,12 +26,29 @@ Options:
    println!("{}", help);
 }
 
-fn shadler_prep(content_type: &str) -> (i32, utils::structs::StreamContent) {
+fn shadler_prep(content_type: &str, args: utils::structs::CommandArguments) -> (i32, utils::structs::StreamContent) {
+
+    let query_arg = args.query;
+    let action_arg = args.action;
+    let player_arg = args.player;
+    let range_arg = args.range;
 
     let content_type_string = if content_type == "shows" { "anime" } else { "manga" };
     let content_part_string = if content_type == "shows" { "episodes" } else { "chapters" };
 
-    let query = utils::helper::shadler_string_input("Query: ");
+    let query;
+    let action;
+    let player;
+    let mut selected_episodes;
+
+    if query_arg.is_empty() {
+        query = utils::helper::shadler_string_input("Query: ");
+
+    } else {
+        query = query_arg;
+
+    }
+
     let query_url = utils::api::shadler_get_query_url(content_type, &query);
     let query_response = utils::api::shadler_get_api_response(&query_url);
 
@@ -63,9 +80,22 @@ fn shadler_prep(content_type: &str) -> (i32, utils::structs::StreamContent) {
     let detail_response = utils::api::shadler_get_api_response(&detail_url);
 
     let available_episodes = utils::helper::shadler_get_available_episodes(content_type, &detail_response);
-    let available_episodes_len = available_episodes.len();
+    let available_episodes_len = available_episodes.len() as i32;
 
-    let mut selected_episodes = utils::helper::shadler_range_input(&format!("Select {} [1-{}]: ", content_part_string, available_episodes_len), 1, available_episodes_len as i32);
+    if range_arg.is_empty() {
+        selected_episodes = utils::helper::shadler_range_input(&format!("Select {} [1-{}]: ", content_part_string, available_episodes_len), 1, available_episodes_len);
+
+    } else {
+        selected_episodes = range_arg;
+        let range_is_valid = utils::helper::shadler_validate_range(&selected_episodes, 1, available_episodes_len);
+
+        if let Err(e) = range_is_valid {
+            eprintln!("{}{}{}\n", RED, e, RESET);
+            exit(1);
+
+        }
+
+    }
 
     // very hacky way to handle a single range episode input (this will be fed to a for loop)
     if selected_episodes.len() == 1 {
@@ -73,19 +103,39 @@ fn shadler_prep(content_type: &str) -> (i32, utils::structs::StreamContent) {
 
     }
 
-    println!("\n{}[1] {}Stream\n{}[2] {}Download{}", MAGENTA, BLUE, MAGENTA, BLUE, RESET);
+    if action_arg == 0 {
+        println!("\n{}[1] {}Stream\n{}[2] {}Download{}", MAGENTA, BLUE, MAGENTA, BLUE, RESET);
+        action = utils::helper::shadler_range_input(&format!("Select action [1-2]: "), 1, 2)[0];
 
-    let action = utils::helper::shadler_range_input(&format!("Select action [1-2]: "), 1, 2);
+    } else {
+        action = action_arg;
+
+    }
+
+    if player_arg.is_empty() {
+
+        match std::env::consts::OS {
+            "linux" => player = "mpv",
+            "android" => player = "android_mpv",
+            &_ => player = "mpv"
+
+        }
+
+    } else {
+        player = &player_arg;
+
+    }
 
     let stream_content = utils::structs::StreamContent {
-        id: selected_id.clone(),
-        title: selected_title.clone(),
+        id: selected_id.to_owned(),
+        title: selected_title.to_owned(),
         selected: selected_episodes,
-        available: available_episodes
+        available: available_episodes,
+        player: player.to_owned()
 
     };
 
-    let stream_info = (action[0], stream_content);
+    let stream_info = (action, stream_content);
     return stream_info;
 
 }
@@ -98,8 +148,10 @@ fn shadler_anime(info: (i32, utils::structs::StreamContent)) {
     let selected_id = stream_content.id;
     let selected_turtle = stream_content.title;
     let selected_episode = stream_content.selected;
+    let selected_player = stream_content.player;
     let mut available_episodes_rev = stream_content.available;
 
+    // reverse because API returns episodes in descending order instead of ascending
     available_episodes_rev.reverse();
 
     for x in selected_episode[0]..selected_episode[1]+1 {
@@ -131,7 +183,7 @@ fn shadler_anime(info: (i32, utils::structs::StreamContent)) {
 
         if action == 1 {
 
-            utils::player::shadler_stream_video(std::env::consts::OS, &selected_turtle, &video_link);
+            utils::player::shadler_stream_video(std::env::consts::OS, &selected_player, &selected_turtle, &video_link);
 
             if x < selected_episode[1] {
                 println!("\n{}[1] {}Next episode\n{}[2] {}Quit{}", MAGENTA, BLUE, MAGENTA, BLUE, RESET);
@@ -177,6 +229,7 @@ fn shadler_manga(info: (i32, utils::structs::StreamContent)) {
     let chapter_end = stream_content.selected[1];
     let mut available_chapters_rev = stream_content.available;
 
+    // reverse because API returns episodes in descending order instead of ascending
     available_chapters_rev.reverse();
 
     let chapters_file_info = utils::helper::shadler_create_file("mangas", &selected_turtle, &format!("chp{chapter_start}-{chapter_end}.html"));
@@ -219,34 +272,155 @@ fn shadler_manga(info: (i32, utils::structs::StreamContent)) {
 
                 }
             }
-        }
+        }   
     }
 
     let reader_base = String::from(utils::constants::MANGA_READER_BASE);
-    let reader = reader_base.replace("#TITLE#", &selected_turtle).replace("#IMG_TAGS#", &page_collection);
+    let reader = reader_base
+        .replace("#TITLE#", &selected_turtle)
+        .replace("#IMG_TAGS#", &page_collection);
 
     chapters_file.write_all(reader.as_bytes()).unwrap();
 
-    println!("\n{}HTML file generated. Start reading by running {}xdg-open '{}'{}", GREEN, YELLOW, chapters_file_path, RESET);
+    if std::env::consts::OS == "android" {
+        let termux_reader_file_info = utils::helper::shadler_create_file("mangas", &selected_turtle, &format!("read_{chapter_start}-{chapter_end}"));
+
+        let termux_reader_file_path = termux_reader_file_info.1;
+        let termux_reader_data_path = termux_reader_file_info.2;
+        let mut termux_reader_file = termux_reader_file_info.0;
+
+        let termux_http_server_base = String::from(utils::constants::TERMUX_HTTP_SERVER_BASE);
+        let termux_http_server = termux_http_server_base
+            .replace("#MANGA_PATH#", &termux_reader_data_path)
+            .replace("#CHAPTER_START#", &format!("{chapter_start}"))
+            .replace("#CHAPTER_STOP#", &format!("{chapter_end}"));
+
+        termux_reader_file.write_all(termux_http_server.as_bytes()).unwrap();
+
+        println!("\n{}HTML file generated. Start reading by running {}{}{}", GREEN, YELLOW, termux_reader_file_path, RESET);
+
+    } else {
+        println!("\n{}HTML file generated. Start reading by running {}xdg-open '{}'{}", GREEN, YELLOW, chapters_file_path, RESET);
+
+    }
+
+}
+
+pub fn shadler_is_option(arg: &str) -> bool {
+
+    if arg.starts_with("-") {
+        return true;
+
+    } else {
+        return false;
+
+    }
 
 }
 
 fn main() {
 
-    let subcommand_arg = std::env::args_os().nth(1);
+    let mut command_args = std::env::args_os();
+    let subcommand_arg = command_args.nth(1);
+
+    let mut query = String::new();
+    let mut action = 0;
+    let mut player = String::new();
+    let mut range: Vec<i32> = Vec::new();
+
+    while let Some(x) = command_args.next() {
+
+        let option = x.into_string().unwrap();
+
+        if option == "-q" || option == "--query"{
+            let temp = command_args
+                .next()
+                .unwrap()
+                .into_string()
+                .unwrap();
+
+            if !shadler_is_option(&temp) { query = temp }
+
+        } else if option == "-s" || option == "--stream" {
+            action = 1;
+
+        } else if option == "-d" || option == "--download" {
+            action = 2;
+
+        } else if option == "-v" || option == "--vlc" {
+            match std::env::consts::OS {
+                "linux" => player = String::from("vlc"),
+                "android" => player = String::from("android_vlc"),
+                &_ => player = String::from("vlc")
+
+            }
+
+        } else if option == "-n" || option == "--nextplayer" {
+            if std::env::consts::OS == "android" { player = String::from("android_nextplayer") }
+
+        } else if option == "-k" || option == "--mpvkt" {
+            if std::env::consts::OS == "android" { player = String::from("android_mpvkt") }
+
+        } else if option == "-r" || option == "--range" {
+
+            let range_lower = command_args
+                .next()
+                .unwrap_or("0".into())
+                .into_string()
+                .unwrap();
+
+            if !shadler_is_option(&range_lower) && range_lower != "0" {
+                if let Some(val) = range_lower.parse::<i32>().ok() {
+                    range.push(val);          
+
+                }
+
+            } else {
+                continue;
+
+            }
+
+            let range_upper = command_args
+                .next()
+                .unwrap_or("0".into())
+                .into_string()
+                .unwrap();
+
+            if !shadler_is_option(&range_upper) && range_upper != "0" {
+                if let Some(val) = range_upper.parse::<i32>().ok() {
+                    range.push(val);
+
+                }
+
+            } else {
+                continue;
+
+            }
+
+        }
+
+    }
+
+    let shadler_args = utils::structs::CommandArguments {
+        query: query,
+        action: action,
+        player: player,
+        range: range
+
+    };
 
     if let Some(val) = subcommand_arg {
         let subcommand = val.into_string().unwrap();
 
         if subcommand == "anime" {
-            let streaming_info = shadler_prep("shows");
+            let streaming_info = shadler_prep("shows", shadler_args);
             shadler_anime(streaming_info);
 
         } else if subcommand == "manga" {
-            let streaming_info = shadler_prep("mangas");
+            let streaming_info = shadler_prep("mangas", shadler_args);
             shadler_manga(streaming_info);
 
-        } else if subcommand == "help" {
+        } else if subcommand == "help" || subcommand == "--help" || subcommand == "-h" {
             shadler_help();
 
         } else {

@@ -1,4 +1,4 @@
-use super::{constants, structs};
+use super::constants;
 
 pub fn shadler_get_query_url(query_type: &str, query: &str) -> String {
 

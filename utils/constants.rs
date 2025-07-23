@@ -37,3 +37,9 @@ pub static MANGA_READER_BASE: &'static str = "
 </html>
 
 ";
+
+pub static TERMUX_HTTP_SERVER_BASE: &'static str = "
+#!/bin/sh
+python3 -m http.server -d #MANGA_PATH# 10100 > /dev/null 2>&1 &
+termux-open http://127.0.0.1:10100/#CHAPTER_START#-#CHAPTER_STOP#.html
+";

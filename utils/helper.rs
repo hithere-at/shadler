@@ -32,31 +32,11 @@ pub fn shadler_range_input(prompt: &str, lower: i32, upper: i32) -> Vec<i32> {
             .filter_map(|x| x.parse::<i32>().ok())
             .collect();
 
-        if ranges.len() == 0 {
-            eprintln!("{}ERROR: Invalid input{}\n", constants::RED, constants::RESET);
-            continue;
+        let ranges_is_valid = shadler_validate_range(&ranges, lower, upper);
 
-        } else if ranges.len() == 1 {
-
-            if ranges[0] < lower || ranges[0] > upper {
-                eprintln!("{}ERROR: Invalid range{}\n", constants::RED, constants::RESET);
-                continue;
-
-            } else {
-                return ranges;
-
-            }
-
-        } else {
-
-            if ranges[0] < lower || ranges[1] > upper || ranges[0] > ranges[1] || ranges[1] < ranges[0] {
-                eprintln!("{}ERROR: Invalid range{}\n", constants::RED, constants::RESET);
-                continue;
-
-            } else {
-                return ranges;
-
-            }
+        match ranges_is_valid {
+            Err(e) => eprintln!("{}{}{}\n", constants::RED, e, constants::RESET),
+            Ok(_val) => return ranges
 
         }
 
@@ -64,7 +44,36 @@ pub fn shadler_range_input(prompt: &str, lower: i32, upper: i32) -> Vec<i32> {
 
 }
 
-pub fn shadler_create_file(content_type: &str, title: &str, file_name: &str) -> (fs::File, String) {
+pub fn shadler_validate_range(ranges: &Vec<i32>, lower: i32, upper: i32) -> Result<bool, String> {
+
+    if ranges.len() == 0 {
+        return Err(format!("ERROR: Invalid input"));
+
+    } else if ranges.len() == 1 {
+
+        if ranges[0] < lower || ranges[0] > upper {
+            return Err(format!("ERROR: Invalid range"));
+
+        } else {
+            return Ok(true);
+
+        }
+
+    } else {
+
+        if ranges[0] < lower || ranges[1] > upper || ranges[0] > ranges[1] || ranges[1] < ranges[0] {
+            return Err(format!("ERROR: Invalid range"));
+
+        } else {
+            return Ok(true);
+
+        }
+
+    }
+    
+}
+
+pub fn shadler_create_file(content_type: &str, title: &str, file_name: &str) -> (fs::File, String, String) {
 
     let content_string = if content_type == "shows" { "anime" } else { "manga" };
 
@@ -82,13 +91,15 @@ pub fn shadler_create_file(content_type: &str, title: &str, file_name: &str) -> 
     let content_file_path = Path::new(&content_file_dir);
 
     if content_data_path.exists() == false {
-        fs::create_dir_all(content_data_dir).unwrap();
+        fs::create_dir_all(&content_data_dir).unwrap();
 
     }
 
     let content_file = fs::File::create(content_file_path).unwrap();
 
-    return (content_file, content_file_path.to_str().unwrap().to_owned());
+    return (content_file,
+            content_file_dir, 
+            content_data_dir);
 
 }
 
