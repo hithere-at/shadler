@@ -10,6 +10,7 @@ pub struct StreamContent {
     pub title: String,
     pub selected: Vec<i32>,
     pub available: Vec<String>,
+    pub action: i32,
     pub player: String
 
 }

@@ -1,3 +1,5 @@
+use std::process::exit;
+
 use super::constants;
 
 pub fn shadler_get_query_url(query_type: &str, query: &str) -> String {
@@ -50,7 +52,7 @@ pub fn shadler_get_detail_url(detail_type: &str, id: &str) -> String {
 pub fn shadler_get_stream_url(detail_type: &str, id: &str, episode: &str) -> String {
 
     let mut ext_var = String::new();
-    let mut stream_var = String::new(); 
+    let mut stream_var = String::new();
 
     if detail_type == "shows" {
         stream_var = constants::ANIME_STREAM_VARS.replace("#ANIME_ID#", id).replace("#EPISODE#", episode);
@@ -73,11 +75,18 @@ pub fn shadler_get_stream_url(detail_type: &str, id: &str, episode: &str) -> Str
 
 pub fn shadler_get_api_response(uri: &str) -> String {
 
-    let mut response = ureq::get(uri)
+    let response_result = ureq::get(uri)
         .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0")
         .header("Referer", "https://allmanga.to")
-        .call()
-        .unwrap();
+        .call();
+
+    let mut response;
+
+    match response_result {
+        Ok(val) => { response = val },
+        Err(_) => { eprintln!("\n{}ERROR: Failed to send an API request, please try again later.{}", constants::RED, constants::RESET); exit(1) }
+
+    }
 
     if response.status().is_success() {
 
@@ -87,7 +96,8 @@ pub fn shadler_get_api_response(uri: &str) -> String {
             .unwrap();
 
         if body.contains("PERSISTED_QUERY_NOT_FOUND") {
-            return String::from("CRITICAL: Hash expired")
+            eprintln!("\n{}CRITICAL: Hash is invalid{}", constants::RED, constants::RESET);
+            exit(1);
 
         } else {
             return body;
@@ -95,7 +105,8 @@ pub fn shadler_get_api_response(uri: &str) -> String {
         }
 
     } else {
-        return String::from("ERROR: Failed to make an API request, please try again.");
+        eprintln!("\n{}CRITICAL: API request sent but returned non-200 status code. Not good{}", constants::RED, constants::RESET);
+        exit(1);
 
     }
 

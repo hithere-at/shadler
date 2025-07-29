@@ -20,8 +20,7 @@ pub static MANGA_READ_HASH: &'static str = "121996b57011b69386b65ca8fc9e202046fc
 pub static DETAIL_VARS: &'static str = "{%22_id%22:%22#ID#%22}";
 pub static API_EXT: &'static str = "{%22persistedQuery%22:{%22version%22:1,%22sha256Hash%22:%22#HASH#%22}}";
 
-pub static MANGA_READER_BASE: &'static str = "
-!<DOCTYPE html>
+pub static MANGA_READER_BASE: &'static str = "!<DOCTYPE html>
 <html>
 
     <head>
@@ -38,8 +37,7 @@ pub static MANGA_READER_BASE: &'static str = "
 
 ";
 
-pub static TERMUX_HTTP_SERVER_BASE: &'static str = "
-#!/bin/sh
-python3 -m http.server -d #MANGA_PATH# 10100 > /dev/null 2>&1 &
+pub static TERMUX_HTTP_SERVER_BASE: &'static str = "#!/bin/sh
+python3 -m http.server -d '#MANGA_PATH#' 10100 > /dev/null 2>&1 &
 termux-open http://127.0.0.1:10100/#CHAPTER_START#-#CHAPTER_STOP#.html
 ";

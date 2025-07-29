@@ -1,5 +1,6 @@
 use std::{io, io::Write, fs};
 use std::path::Path;
+use std::process::exit;
 use serde_json::Value;
 
 use super::{constants, structs, api};
@@ -25,7 +26,7 @@ pub fn shadler_range_input(prompt: &str, lower: i32, upper: i32) -> Vec<i32> {
         let mut input = String::new();
         io::stdout().flush().unwrap();
         io::stdin().read_line(&mut input).unwrap();
-        
+
         let ranges: Vec<i32> = input
             .trim()
             .split(" ")
@@ -70,7 +71,7 @@ pub fn shadler_validate_range(ranges: &Vec<i32>, lower: i32, upper: i32) -> Resu
         }
 
     }
-    
+
 }
 
 pub fn shadler_create_file(content_type: &str, title: &str, file_name: &str) -> (fs::File, String, String) {
@@ -98,19 +99,28 @@ pub fn shadler_create_file(content_type: &str, title: &str, file_name: &str) -> 
     let content_file = fs::File::create(content_file_path).unwrap();
 
     return (content_file,
-            content_file_dir, 
+            content_file_dir,
             content_data_dir);
 
 }
 
-pub fn shadler_get_query_object(content_type: &str, resp: &str) -> Result<Vec<structs::QueryContent>, String> {
+pub fn shadler_get_query_object(content_type: &str, resp: &str) -> Vec<structs::QueryContent> {
 
-    let response_json: Value = serde_json::from_str(resp).unwrap();
+    let response_result = serde_json::from_str(resp);
+    let response_json: Value;
+
+    match response_result {
+        Ok(val) => { response_json = val },
+        Err(_) => { eprintln!("{}ERROR: {}{}",constants::RED, resp, constants::RESET); exit(1) } // print _resp_ because the API will return the error message instead
+
+    }
+
     let results = response_json["data"][content_type]["edges"].as_array().unwrap();
 
-    // check if there is no query results
     if results.len() == 0 {
-        return Err(format!("No results.."));
+        eprintln!("{}No results..{}", constants::RED, constants::RESET);
+        exit(1);
+
     }
 
     let mut contents: Vec<structs::QueryContent> = Vec::new();
@@ -125,7 +135,7 @@ pub fn shadler_get_query_object(content_type: &str, resp: &str) -> Result<Vec<st
         )
     }
 
-    return Ok(contents);
+    return contents;
 
 }
 
