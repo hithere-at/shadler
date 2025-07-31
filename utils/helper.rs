@@ -3,11 +3,11 @@ use std::path::Path;
 use std::process::exit;
 use serde_json::Value;
 
-use super::{constants, structs, api};
+use super::{constants::{MAGENTA, RED, RESET}, structs, api};
 
 pub fn shadler_string_input(prompt: &str) -> String {
 
-    print!("{}{}{}", constants::MAGENTA, prompt, constants::RESET);
+    print!("{MAGENTA}{prompt}{RESET}");
 
     let mut input = String::new();
     io::stdout().flush().unwrap(); // flush manually because stdout flush on newlines and we dont want that
@@ -21,7 +21,7 @@ pub fn shadler_range_input(prompt: &str, lower: i32, upper: i32) -> Vec<i32> {
 
     loop {
 
-        print!("{}{}{}", constants::MAGENTA, prompt, constants::RESET);
+        print!("{MAGENTA}{prompt}{RESET}");
 
         let mut input = String::new();
         io::stdout().flush().unwrap();
@@ -36,7 +36,7 @@ pub fn shadler_range_input(prompt: &str, lower: i32, upper: i32) -> Vec<i32> {
         let ranges_is_valid = shadler_validate_range(&ranges, lower, upper);
 
         match ranges_is_valid {
-            Err(e) => eprintln!("{}{}{}\n", constants::RED, e, constants::RESET),
+            Err(e) => eprintln!("{RED}{e}{RESET}\n"),
             Ok(_val) => return ranges
 
         }
@@ -111,14 +111,14 @@ pub fn shadler_get_query_object(content_type: &str, resp: &str) -> Vec<structs::
 
     match response_result {
         Ok(val) => { response_json = val },
-        Err(_) => { eprintln!("{}ERROR: {}{}",constants::RED, resp, constants::RESET); exit(1) } // print _resp_ because the API will return the error message instead
+        Err(_) => { eprintln!("{RED}ERROR: {resp}{RESET}"); exit(1) } // print _resp_ because the API will return the error message instead
 
     }
 
     let results = response_json["data"][content_type]["edges"].as_array().unwrap();
 
     if results.len() == 0 {
-        eprintln!("{}No results..{}", constants::RED, constants::RESET);
+        eprintln!("{RED}No results..{RESET}");
         exit(1);
 
     }
