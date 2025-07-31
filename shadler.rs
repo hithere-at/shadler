@@ -24,7 +24,7 @@ Options:
     -h | --help                     Show this help message
 ";
 
-   println!("{}", help);
+   println!("{help}");
 }
 
 fn shadler_prep(content_type: &str, args: utils::structs::CommandArguments) -> utils::structs::StreamContent {
@@ -61,11 +61,11 @@ fn shadler_prep(content_type: &str, args: utils::structs::CommandArguments) -> u
     print!("\n");
     for x in &query_contents_vec {
         query_contents_len += 1;
-        println!("{}[{}] {} {} {} ", MAGENTA, query_contents_len, BLUE, x.title, RESET);
+        println!("{MAGENTA}[{query_contents_len}] {BLUE} {} {RESET} ", x.title);
 
     }
 
-    let range = utils::helper::shadler_range_input(&format!("Select {} [1-{}]: ", content_type_string, query_contents_len), 1, query_contents_len);
+    let range = utils::helper::shadler_range_input(&format!("Select {content_type_string} [1-{}]: ", query_contents_len), 1, query_contents_len);
 
     let selected_index = range[0] as usize;
     let selected = query_contents_vec.swap_remove(selected_index-1);
@@ -80,14 +80,14 @@ fn shadler_prep(content_type: &str, args: utils::structs::CommandArguments) -> u
     let available_episodes_len = available_episodes.len() as i32;
 
     if range_arg.is_empty() {
-        selected_episodes = utils::helper::shadler_range_input(&format!("Select {} [1-{}]: ", content_part_string, available_episodes_len), 1, available_episodes_len);
+        selected_episodes = utils::helper::shadler_range_input(&format!("Select {content_part_string} [1-{}]: ", available_episodes_len), 1, available_episodes_len);
 
     } else {
         selected_episodes = range_arg;
         let range_is_valid = utils::helper::shadler_validate_range(&selected_episodes, 1, available_episodes_len);
 
         if let Err(e) = range_is_valid {
-            eprintln!("{}{}{}\n", RED, e, RESET);
+            eprintln!("{RED}{e}{RESET}\n");
             exit(1);
 
         }
@@ -101,7 +101,7 @@ fn shadler_prep(content_type: &str, args: utils::structs::CommandArguments) -> u
     }
 
     if action_arg == 0 {
-        println!("\n{}[1] {}Stream\n{}[2] {}Download{}", MAGENTA, BLUE, MAGENTA, BLUE, RESET);
+        println!("\n{MAGENTA}[1] {BLUE}Stream\n{MAGENTA}[2] {BLUE}Download{RESET}");
         action = utils::helper::shadler_range_input(&format!("Select action [1-2]: "), 1, 2)[0];
 
     } else {
@@ -180,7 +180,7 @@ fn shadler_anime(stream_content: utils::structs::StreamContent) {
             utils::player::shadler_stream_video(std::env::consts::OS, &selected_player, &selected_turtle, &video_link);
 
             if x < selected_episode[1] {
-                println!("\n{}[1] {}Next episode\n{}[2] {}Quit{}", MAGENTA, BLUE, MAGENTA, BLUE, RESET);
+                println!("\n{MAGENTA}[1] {BLUE}Next episode\n{MAGENTA}[2] {BLUE}Quit{RESET}");
 
                 let next_action = utils::helper::shadler_range_input("Select action [1-2]: ", 1, 2);
                 let selected_action = next_action[0]; // ignore range input
@@ -197,12 +197,12 @@ fn shadler_anime(stream_content: utils::structs::StreamContent) {
 
         } else if action == 2 {
 
-            println!("\n{}Downloading Episode {}..{}", YELLOW, x, RESET);
+            println!("\n{YELLOW}Downloading Episode {}..{}", x, RESET);
             let download_result = utils::downloader::shadler_download_file("shows", &video_link, &selected_turtle, &format!("Episode {x}.mp4"));
 
             match download_result {
-                Err(e) => eprintln!("\n{}{}{}", RED, e, RESET),
-                Ok(path) => println!("{}Episode {} downloaded at {}'{}'!{}", GREEN, x, YELLOW, path, RESET)
+                Err(e) => eprintln!("\n{RED}{e}{RESET}"),
+                Ok(path) => println!("{GREEN}Episode {x} downloaded at {YELLOW}'{path}'!{RESET}")
 
             }
 
@@ -229,11 +229,9 @@ fn shadler_manga(stream_content: utils::structs::StreamContent) {
     let mut chapters_file = chapters_file_info.0;
     let mut page_collection = String::new();
 
-    println!("\n");
-
     for x in chapter_start..chapter_end+1 {
 
-        println!("{}Loading chapter {}..{}", YELLOW, x, RESET);
+        println!("\n{YELLOW}Loading chapter {}..{}", x, RESET);
 
         let current_selected = (x-1) as usize;
         let stream_url = utils::api::shadler_get_stream_url("mangas", &selected_id, &available_chapters_rev[current_selected]);
@@ -257,7 +255,7 @@ fn shadler_manga(stream_content: utils::structs::StreamContent) {
                 let download_result = utils::downloader::shadler_download_file("mangas", &page_url, &selected_turtle, &format!("chp{x}_{page_counter}"));
 
                 if let Err(e) = download_result {
-                    eprintln!("\n{}{}{}", RED, e, RESET);
+                    eprintln!("\n{RED}{e}{RESET}");
                     exit(1);
 
                 } else if let Ok(path) = download_result {
@@ -291,10 +289,10 @@ fn shadler_manga(stream_content: utils::structs::StreamContent) {
 
         termux_reader_file.write_all(termux_http_server.as_bytes()).unwrap();
 
-        println!("\n{}HTML file generated. Start reading by running {}'{}'{}", GREEN, YELLOW, termux_reader_file_path, RESET);
+        println!("\n{GREEN}HTML file generated. Start reading by running {YELLOW}'{termux_reader_file_path}'{RESET}");
 
     } else {
-        println!("\n{}HTML file generated. Start reading by running {}xdg-open '{}'{}", GREEN, YELLOW, chapters_file_path, RESET);
+        println!("\n{GREEN}HTML file generated. Start reading by running {YELLOW}xdg-open '{chapters_file_path}'{RESET}");
 
     }
 
@@ -418,12 +416,12 @@ fn main() {
             shadler_help();
 
         } else {
-            eprintln!("{}ERROR: Unknown subcommand. Available subcommand is 'anime' and 'manga', and 'help'{}", RED, RESET);
+            eprintln!("{RED}ERROR: Unknown subcommand. Available subcommand is 'anime' and 'manga', and 'help'{RESET}");
 
         }
 
     } else {
-        eprintln!("{}ERROR: No subcommand passed. Available subcommand is 'anime' and 'manga', and 'help'{}", RED, RESET);
+        eprintln!("{RED}ERROR: No subcommand passed. Available subcommand is 'anime' and 'manga', and 'help'{RESET}");
 
     }
 
