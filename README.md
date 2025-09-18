@@ -11,10 +11,13 @@ Rust memory safety ensures that the application cannot have memory leaks or unde
 `$ shadler anime` to watch anime and `$ shadler manga` to read manga. `$ shadler help` to get more information.
 
 ## Dependencies
-TODO
+- mpv for video player
 
 ## Installation
+You can use the binary on the release page and execute themn normally, or you can use the command below to do it for you automatically
+```sh
 TODO
+```
 
 ### For Termux users
 Using Termux requires you to have either [mpv-android](https://github.com/mpv-android/mpv-android), [NextPlayer](https://github.com/anilbeesetti/nextplayer), or [VLC](https://github.com/videolan/vlc-android) installed on your phone.
