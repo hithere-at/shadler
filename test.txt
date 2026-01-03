@@ -1,1 +1,0 @@
-\{%22search%22:\{%22query%22:%22gakuen%22,%22isManga%22:true\},%22limit%22:26,%22page%22:1,%22translationType%22:%22sub%22,%22countryOrigin%22:%22ALL%22\}
