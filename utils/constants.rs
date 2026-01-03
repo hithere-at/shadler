@@ -13,9 +13,9 @@ pub static ANIME_DETAIL_HASH: &'static str = "9d7439c90f203e534ca778c4901f9aa2d3
 
 pub static MANGA_QUERY_VARS: &'static str = "{%22search%22:{%22query%22:%22#QUERY#%22,%22isManga%22:true},%22limit%22:26,%22page%22:1,%22translationType%22:%22sub%22,%22countryOrigin%22:%22ALL%22}";
 pub static MANGA_READ_VARS: &'static str = "{%22mangaId%22:%22#MANGA_ID#%22,%22translationType%22:%22sub%22,%22chapterString%22:%22#CHAPTER#%22,%22limit%22:10,%22offset%22:0}";
-pub static MANGA_QUERY_HASH: &'static str = "a27e57ef5de5bae714db701fb7b5cf57e13d57938fc6256f7d5c70a975d11f3d";
-pub static MANGA_DETAIL_HASH: &'static str = "529b0770601c7e04c98566c7b7bb3f75178930ae18b3084592d8af2b591a009f";
-pub static MANGA_READ_HASH: &'static str = "121996b57011b69386b65ca8fc9e202046fc20bf68b8c8128de0d0e92a681195";
+pub static MANGA_QUERY_HASH: &'static str = "3a4b7e9ef62953484a05dd40f35b35b118ad2ff3d5e72d2add79bcaa663271e7";
+pub static MANGA_DETAIL_HASH: &'static str = "90024aeae9c1a4d3ace0473871dd1902e47fbcb8781ccbcd8ad81f8bb1f313ee";
+pub static MANGA_READ_HASH: &'static str = "4a048654fbac31f11e201ac8bd34d748b514c28d2781b674d057d064282e620e";
 
 pub static DETAIL_VARS: &'static str = "{%22_id%22:%22#ID#%22}";
 pub static API_EXT: &'static str = "{%22persistedQuery%22:{%22version%22:1,%22sha256Hash%22:%22#HASH#%22}}";
