@@ -27,7 +27,7 @@ Using Termux requires you to have either [mpv-android](https://github.com/mpv-an
 git clone https://github.com/hithere-at/shadler
 cd shadler
 cargo build --release
-sudo mv target/release/shadler $PREFIX/bin
+mv target/release/shadler $PREFIX/bin
 ```
 
 ## Supported platform
