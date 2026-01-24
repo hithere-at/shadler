@@ -8,9 +8,6 @@
 # $query_url: A variable containing URL for getting API query results
 # $ret_val: A variable containing the return value of a function
 # $action: A variable containing what type of action user do, streaming or downloading
-# $quality: A variable specifying what quality will the video be streamed or downloaded
-
-# Please make all variables inside a function local
 
 RESET="\033[0m"
 MAGENTA="\033[1;35m"
@@ -345,13 +342,13 @@ anime_handler() {
 
 		# Use the echo command to avoid printf invalid directive
 		hls_source=$(echo "$api_resp" | grep -o 'apivtwo/[^"]*')
-    	hls_source=$(printf "%s" "$hls_source" | sed -e "s/clock/clock.json/" -e 's/\/download//')
-		api_resp=$(curl -s "https://allanime.pro/${hls_source}")
+    	hls_source=$(printf "%s" "$hls_source" | sed -e "s/clock/clock.json/" -e 's/\/dr//')
+		api_resp=$(curl -s "https://blog.allanime.day/${hls_source}")
 		video_url=$(echo "$api_resp" | grep -o 'https://[^"]*' | head -n 1)
 
 		if [ "$action" -eq 1 ]; then
 			video_links="${video_links}$video_url\n"
-			printf "%bEpisode %s URL found%b\n" "$GREEN" "$ep_idx" "$RESET"
+			printf "\n%bEpisode %s URL found%b\n" "$GREEN" "$ep_idx" "$RESET"
 
 		else
 			printf "%bDownloading Episode %s...%b\n\n" "$YELLOW" "$ep_idx" "$RESET"
@@ -471,7 +468,7 @@ manga_handler() {
 		proper_idx=$(echo "$chapters_idx" | sed "${chp_idx}q;d")
 		read_url=$(get_streams_url "manga" "$curr_id" "$proper_idx")
 		api_resp=$(curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0" -H 'Referer: https://allanime.to/' "$read_url")
-		panel_url_list=$(echo "$api_resp" | grep -o '"sourceName":"YoutubeAnime[^]]*' | grep -o 'url":"[^"]*' | sed 's/url":"//g')
+		panel_url_list=$(echo "$api_resp" | grep -o '"sourceName":"YtA[^]]*' | grep -o 'url":"[^"]*' | sed 's/url":"//g')
 		panel_url_len=$(echo "$panel_url_list" | wc -l)
 		panel_idx=1
 
@@ -524,8 +521,10 @@ EOF
 
     if [ "$PLATFORM" = "Android" ]; then
         cat << EOF > "$DATA_DIR/manga/$manga_name/read_${start}-${stop}"
-#!/bin/sh
+#!/data/data/com.termux/files/usr/bin/sh
+kill -15 "\$(cat $PREFIX/tmp/shadler_server_lock 2> /dev/null)" 2> /dev/null
 python3 -m http.server -d "$DATA_DIR/manga/$manga_name/" 10100 > /dev/null 2>&1 &
+echo "\$!" > $PREFIX/tmp/shadler_server_lock
 termux-open http://127.0.0.1:10100/$start-$stop.html
 EOF
         chmod +x "$DATA_DIR/manga/$manga_name/read_${start}-${stop}"
