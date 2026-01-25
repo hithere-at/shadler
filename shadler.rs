@@ -165,7 +165,7 @@ fn shadler_anime(stream_content: utils::structs::StreamContent) {
         video_source.push_str(
             &matched
             .replace("clock", "clock.json")
-            .replace("/download", "")
+            .replace("/dr", "")
         );
 
         let vid_source_response = utils::api::shadler_get_api_response(&video_source);
@@ -312,7 +312,7 @@ pub fn shadler_is_option(arg: &str) -> bool {
 
 fn main() {
 
-    let mut command_args = std::env::args_os();
+    let mut command_args = std::env::args_os().peekable();
     let subcommand_arg = command_args.nth(1);
 
     let mut query = String::new();
@@ -356,14 +356,16 @@ fn main() {
         } else if option == "-r" || option == "--range" {
 
             let range_lower = command_args
-                .next()
-                .unwrap_or("0".into())
+                .peek()
+                .unwrap()
+                .to_owned()
                 .into_string()
                 .unwrap();
 
             if !shadler_is_option(&range_lower) && range_lower != "0" {
                 if let Some(val) = range_lower.parse::<i32>().ok() {
                     range.push(val);
+                    command_args.next();
 
                 }
 
@@ -373,8 +375,9 @@ fn main() {
             }
 
             let range_upper = command_args
-                .next()
-                .unwrap_or("0".into())
+                .peek()
+                .unwrap()
+                .to_owned()
                 .into_string()
                 .unwrap();
 
