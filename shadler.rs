@@ -323,7 +323,6 @@ fn main() {
     while let Some(x) = command_args.next() {
 
         let option = x.into_string().unwrap();
-        println!("{}", option);
 
         if option == "-q" || option == "--query"{
             let temp = command_args
@@ -363,8 +362,6 @@ fn main() {
                 .into_string()
                 .unwrap();
 
-            println!("{}, r_low", range_lower);
-
             if !shadler_is_option(&range_lower) && range_lower != "0" {
                 if let Some(val) = range_lower.parse::<i32>().ok() {
                     range.push(val);
@@ -383,8 +380,6 @@ fn main() {
                 .to_owned()
                 .into_string()
                 .unwrap();
-
-            println!("{}, r_high", range_upper);
 
             if !shadler_is_option(&range_upper) && range_upper != "0" {
                 if let Some(val) = range_upper.parse::<i32>().ok() {
