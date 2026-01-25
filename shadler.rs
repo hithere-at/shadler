@@ -1,4 +1,5 @@
-use std::{process::exit, io::Write};
+use std::{fs, process::exit, io::Write};
+use std::os::unix::fs::PermissionsExt;
 use regex::Regex;
 use serde_json::Value;
 use utils::constants::{MAGENTA, BLUE, RED, RESET, YELLOW, GREEN};
@@ -224,7 +225,7 @@ fn shadler_manga(stream_content: utils::structs::StreamContent) {
     // reverse because API returns episodes in descending order instead of ascending
     available_chapters_rev.reverse();
 
-    let chapters_file_info = utils::helper::shadler_create_file("mangas", &selected_turtle, &format!("chp{chapter_start}-{chapter_end}.html"));
+    let chapters_file_info = utils::helper::shadler_create_file("mangas", &selected_turtle, &format!("{chapter_start}-{chapter_end}.html"));
     let chapters_file_path = chapters_file_info.1;
     let mut chapters_file = chapters_file_info.0;
     let mut page_collection = String::new();
@@ -288,6 +289,7 @@ fn shadler_manga(stream_content: utils::structs::StreamContent) {
             .replace("#CHAPTER_STOP#", &format!("{chapter_end}"));
 
         termux_reader_file.write_all(termux_http_server.as_bytes()).unwrap();
+        fs::set_permissions(&termux_reader_file_path, fs::Permissions::from_mode(0o755)).unwrap();
 
         println!("\n{GREEN}HTML file generated. Start reading by running {YELLOW}'{termux_reader_file_path}'{RESET}");
 

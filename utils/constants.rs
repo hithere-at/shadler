@@ -20,7 +20,7 @@ pub static MANGA_READ_HASH: &'static str = "4a048654fbac31f11e201ac8bd34d748b514
 pub static DETAIL_VARS: &'static str = "{%22_id%22:%22#ID#%22}";
 pub static API_EXT: &'static str = "{%22persistedQuery%22:{%22version%22:1,%22sha256Hash%22:%22#HASH#%22}}";
 
-pub static MANGA_READER_BASE: &'static str = "!<DOCTYPE html>
+pub static MANGA_READER_BASE: &'static str = "<!DOCTYPE html>
 <html>
 
     <head>
@@ -38,6 +38,8 @@ pub static MANGA_READER_BASE: &'static str = "!<DOCTYPE html>
 ";
 
 pub static TERMUX_HTTP_SERVER_BASE: &'static str = "#!/bin/sh
+kill -15 \"$(cat /data/data/com.termux/files/usr/tmp/shadler_eerver_lock 2> /dev/null)\" 2> /dev/null
 python3 -m http.server -d '#MANGA_PATH#' 10100 > /dev/null 2>&1 &
+echo \"$!\" > /data/data/com.termux/files/usr/tmp/shadler_server_lock
 termux-open http://127.0.0.1:10100/#CHAPTER_START#-#CHAPTER_STOP#.html
 ";
