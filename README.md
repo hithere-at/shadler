@@ -1,5 +1,5 @@
 # shadler
-A shell script to stream and download anime from AllAnime
+A shell script to stream and download anime
 
 ## Usage
 `$ shadler anime` to watch anime and `$ shadler manga` to read manga. `$ shadler help` to get more information.
@@ -21,7 +21,7 @@ chmod +x shadler
 mv shadler $PREFIX/bin
 ```
 
-### GNU/Linux
+### Linux
 VLC is supported but you have to install VLC using your package manager.
 
 ##### Ubuntu
@@ -41,16 +41,10 @@ sudo mv shadler /usr/local/bin
 ```
 
 ## Supported platform
-- GNU/Linux
-- Termux
+- Linux (Ubuntu, Arch, Fedora, etc.)
+- Android (Termux)
 
-> Windows port using WinUI 3 is on progress at [shadler-winui](https://github.com/hithere-at/shadler-winui), however it *will* only support Windows 10 and above. If someone wants to continue the PowerShell port, please do.
-
-## To-do list
-- [x] Core functionality (e.g streaming and downloding)
-- [ ] `TODO` AllAnime API documentation
-- [x] Support for other platforms
-- [x] Support for using arguments
+> A cross platform GUI is on progress at [shadler-avalon](https://github.com/hithere-at/shadler-avalon), however for Windows, it *will* only support Windows 10 and above. If someone wants to continue the PowerShell port, please do.
 
 ## Notes
 - ~~Download option for manga is broken on Termux due to Android scoped storage. Opening the HTML file using `termux-open`  will result in `Failed to load image` error. This is due to Android 11+ scoped storage policy. Will add a fix until a workaround is found.~~ As a workaround, on Termux, reading offline will require Python 3 http.server module. This method does not use any data.
