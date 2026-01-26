@@ -1,5 +1,5 @@
 # shadler-rs
-A rust console application to stream and download anime from AllAnime
+A rust console application to stream and download anime
 
 ### Whats the difference between the rust and shell version
 Nothing. The rust version is a little bit faster than the shell version because of the advantage of using a compiled language. Other than that, it is pretty much the same and reaches feature parity with the shell version
@@ -10,7 +10,6 @@ Nothing. The rust version is a little bit faster than the shell version because 
 ## Dependencies
 - rust, to compile rust programs (you can remove it when you are done)
 - mpv for video player
-  
 
 ## Installation
 You can use the binary on the release page and execute them normally, or you can use the command below to do it for you automatically.
@@ -32,15 +31,9 @@ mv target/release/shadler $PREFIX/bin
 
 ## Supported platform
 - Linux (Ubuntu, Arch, Fedora, etc.)
-- Termux
+- Android (Termux)
 
-> Windows port using WinUI 3 is on progress at [shadler-winui](https://github.com/hithere-at/shadler-winui), however it *will* only support Windows 10 and above. If someone wants to continue the PowerShell port, please do.
-
-## To-do list
-- [x] Core functionality (e.g streaming and downloding)
-- [ ] `TODO` AllAnime API documentation
-- [x] Support for other platforms
-- [x] Support for using arguments
+> A cross platform GUI version is on progress at [shadler-avalon](https://github.com/hithere-at/shadler-avalon), however for Windows, it *will* only support Windows 10 and above. If someone wants to continue the PowerShell port, please do.
 
 ## Notes
 - Offline reading is possible on Termux, however due to the nature of Android, web browsers do not have direct access to folders and file. Therefore, to circumvent this problem, we used Python HTTP server to serve images. This does not require any online connection as the image is stored locally and its entire purpose is to load the image from `shadler` data folder.
