@@ -9,6 +9,7 @@ pub fn shadler_download_file(content_type: &str, content_link: &str, title: &str
     let mut episode_file = episode_file_info.0;
 
     let response = ureq::head(content_link)
+        .header("Referer", "https://allmanga.to/")
         .call()
         .unwrap();
 
@@ -34,6 +35,7 @@ pub fn shadler_download_file(content_type: &str, content_link: &str, title: &str
 
         let mut video_response = ureq::get(content_link)
         .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0")
+        .header("Referer", "https://allmanga.to/")
         .header("Range", &format!("bytes={downloaded_bytes}-{next_chunk}"))
         .call()
         .unwrap();
