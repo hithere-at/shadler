@@ -247,24 +247,19 @@ fn shadler_manga(stream_content: utils::structs::StreamContent) {
             let page_path = current_page["url"].as_str().unwrap();
             let page_url = page_url_head.to_owned() + page_path;
 
-            if action == 1 {
-                let page_img_tag = format!("<img src='{page_url}' alt='Failed to load image'>\n");
+            page_counter += 1;
+            let download_result = utils::downloader::shadler_download_file("mangas", &page_url, &selected_turtle, &format!("chp{x}_{page_counter}.png"));
+
+            if let Err(e) = download_result {
+               eprintln!("\n{RED}{e}{RESET}");
+               exit(1);
+
+            } else if let Ok(path) = download_result {
+                let page_img_tag = format!("<img src='{path}' alt='Failed to load image'>\n");
                 page_collection.push_str(&page_img_tag);
 
-            } else if action == 2 {
-                page_counter += 1;
-                let download_result = utils::downloader::shadler_download_file("mangas", &page_url, &selected_turtle, &format!("chp{x}_{page_counter}"));
-
-                if let Err(e) = download_result {
-                    eprintln!("\n{RED}{e}{RESET}");
-                    exit(1);
-
-                } else if let Ok(path) = download_result {
-                    let page_img_tag = format!("<img src='{path}' alt='Failed to load image'>\n");
-                    page_collection.push_str(&page_img_tag);
-
-                }
             }
+
         }
     }
 
