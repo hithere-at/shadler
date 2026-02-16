@@ -50,8 +50,6 @@ pub fn shadler_get_detail_url(query_type: &str, id: &str) -> String {
 pub fn shadler_get_stream_url(detail_type: &str, id: &str, episode: &str) -> String {
 
     let mut stream_var = String::new();
-    println!("{}", episode);
-
     let mut stream_url = String::from("https://api.allanime.day/api?query=");
 
     if detail_type == "shows" {
@@ -78,8 +76,6 @@ pub fn shadler_get_api_response(uri: &str) -> String {
         .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0")
         .header("Referer", "https://allmanga.to/")
         .call();
-
-    println!("{}", uri);
 
     let mut response;
 
