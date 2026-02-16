@@ -5,20 +5,19 @@ pub static GREEN: &'static str = "\x1B[1;32m";
 pub static RED: &'static str ="\x1B[1;31m";
 pub static BLUE: &'static str ="\x1B[1;34m";
 
-pub static ANIME_QUERY_VARS: &'static str = "{%22search%22:{%22query%22:%22#QUERY#%22,%22allowAdult%22:false,%22allowUnknown%22:false},%22limit%22:26,%22page%22:1,%22translationType%22:%22sub%22,%22countryOrigin%22:%22ALL%22}";
-pub static ANIME_STREAM_VARS: &'static str = "{%22showId%22:%22#ANIME_ID#%22,%22translationType%22:%22sub%22,%22episodeString%22:%22#EPISODE#%22}";
-pub static ANIME_QUERY_HASH: &'static str = "06327bc10dd682e1ee7e07b6db9c16e9ad2fd56c1b769e47513128cd5c9fc77a";
-pub static ANIME_STREAM_HASH: &'static str = "5f1a64b73793cc2234a389cf3a8f93ad82de7043017dd551f38f65b89daa65e0";
-pub static ANIME_DETAIL_HASH: &'static str = "9d7439c90f203e534ca778c4901f9aa2d3ad42c06243ab2c5e6b79612af32028";
+pub static ANIME_QUERY_STRING: &'static str = "query%28%24search%3A%20SearchInput%29%20%7B%20shows%28search%3A%20%24search%29%20%7B%20edges%20%7B%20_id%20name%20%7D%20%7D%20%7D";
+pub static ANIME_QUERY_VARS: &'static str = "%7B%22search%22%3A%7B%22query%22%3A%22#QUERY#%22%7D%7D";
+pub static ANIME_STREAM_STRING: &'static str = "query%28%24showId%3A%20String%21%20%24episodeString%3A%20String%21%29%20%7B%20episode%28showId%3A%20%24showId%20translationType%3A%20sub%20episodeString%3A%20%24episodeString%29%20%7B%20sourceUrls%20%7D%20%7D";
+pub static ANIME_STREAM_VARS: &'static str = "%7B%22showId%22%3A%22#ANIME_ID#%22%2C%22episodeString%22%3A%22#EPISODE#%22%7D";
 
-pub static MANGA_QUERY_VARS: &'static str = "{%22search%22:{%22query%22:%22#QUERY#%22,%22isManga%22:true},%22limit%22:26,%22page%22:1,%22translationType%22:%22sub%22,%22countryOrigin%22:%22ALL%22}";
-pub static MANGA_READ_VARS: &'static str = "{%22mangaId%22:%22#MANGA_ID#%22,%22translationType%22:%22sub%22,%22chapterString%22:%22#CHAPTER#%22,%22limit%22:10,%22offset%22:0}";
-pub static MANGA_QUERY_HASH: &'static str = "3a4b7e9ef62953484a05dd40f35b35b118ad2ff3d5e72d2add79bcaa663271e7";
-pub static MANGA_DETAIL_HASH: &'static str = "90024aeae9c1a4d3ace0473871dd1902e47fbcb8781ccbcd8ad81f8bb1f313ee";
-pub static MANGA_READ_HASH: &'static str = "4a048654fbac31f11e201ac8bd34d748b514c28d2781b674d057d064282e620e";
+pub static MANGA_QUERY_STRING: &'static str = "query%28%24search%3A%20SearchInput%29%20%7B%20mangas%28search%3A%20%24search%29%20%7B%20edges%20%7B%20_id%20name%20%7D%20%7D%20%7D";
+pub static MANGA_QUERY_VARS: &'static str = "%7B%22search%22%3A%7B%22query%22%3A%22#QUERY#%22%2C%22isManga%22%3Atrue%7D%7D";
+pub static MANGA_READ_STRING: &'static str = "query%28%24mangaId%3A%20String%21%20%24chapterString%3A%20String%21%29%20%7B%20chapterPages%28mangaId%3A%20%24mangaId%20translationType%3A%20sub%20chapterString%3A%20%24chapterString%29%20%7B%20edges%20%7B%20pictureUrls%20pictureUrlHead%20%7D%20%7D%20%7D";
+pub static MANGA_READ_VARS: &'static str = "%7B%22mangaId%22%3A%22#MANGA_ID#%22%2C%22chapterString%22%3A%22#CHAPTER#%22%7D";
 
-pub static DETAIL_VARS: &'static str = "{%22_id%22:%22#ID#%22}";
-pub static API_EXT: &'static str = "{%22persistedQuery%22:{%22version%22:1,%22sha256Hash%22:%22#HASH#%22}}";
+pub static ANIME_DETAIL_STRING: &'static str = "query%28%24_id%3A%20String%21%29%20%7B%20show%28_id%3A%20%24_id%29%20%7B%20availableEpisodesDetail%20%7D%20%7D";
+pub static MANGA_DETAIL_STRING: &'static str = "query%28%24_id%3A%20String%21%29%20%7B%20manga%28_id%3A%20%24_id%29%20%7B%20availableChaptersDetail%20%7D%20%7D";
+pub static DETAIL_VARS: &'static str = "%7B%22_id%22%3A%22#ID#%22%7D";
 
 pub static MANGA_READER_BASE: &'static str = "<!DOCTYPE html>
 <html>
@@ -34,11 +33,10 @@ pub static MANGA_READER_BASE: &'static str = "<!DOCTYPE html>
     </body>
 
 </html>
-
 ";
 
 pub static TERMUX_HTTP_SERVER_BASE: &'static str = "#!/bin/sh
-kill -15 \"$(cat /data/data/com.termux/files/usr/tmp/shadler_eerver_lock 2> /dev/null)\" 2> /dev/null
+kill -15 \"$(cat /data/data/com.termux/files/usr/tmp/shadler_server_lock 2> /dev/null)\" 2> /dev/null
 python3 -m http.server -d '#MANGA_PATH#' 10100 > /dev/null 2>&1 &
 echo \"$!\" > /data/data/com.termux/files/usr/tmp/shadler_server_lock
 termux-open http://127.0.0.1:10100/#CHAPTER_START#-#CHAPTER_STOP#.html
